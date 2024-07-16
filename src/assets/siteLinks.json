@@ -1,27 +1,27 @@
 [
   {
     "icon": "Blog",
-    "name": "博客",
+    "name": "博客小站",
     "link": "https://halo.mumuseeu.xyz/"
   },
   {
     "icon": "Cloud",
-    "name": "软件",
+    "name": "软件小站",
     "link": "https://soft.mumuseeu.xyz/"
   },
   {
     "icon": "CompactDisc",
-    "name": "音乐",
+    "name": "音乐小站",
     "link": "https://music.mumuseeu.xyz/"
   },
   {
     "icon": "Compass",
-    "name": "导航",
+    "name": "导航小站",
     "link": "https://dh.mumuseeu.xyz/"
   },
   {
     "icon": "Book",
-    "name": "阅读",
+    "name": "阅读小站",
     "link": "https://book.mumuseeu.xyz/"
   },
   {
