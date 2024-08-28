@@ -4,6 +4,11 @@
     "name": "博客",
     "link": "https://blog.mmcool.site/"
   },
+    {
+    "icon": "Cloud",
+    "name": "云盘",
+    "link": "https://drive.almondcloud.cn/"
+  },
   {
     "icon": "LocationArrow",
     "name": "IP查询",
