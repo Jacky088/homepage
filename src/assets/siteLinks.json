@@ -10,9 +10,9 @@
     "link": "https://drive.almondcloud.cn/"
   },
   {
-    "icon": "LocationArrow",
-    "name": "IP查询",
-    "link": "https://ip.mmcool.site/"
+    "icon": "Image",
+    "name": "图床",
+    "link": "https://111666.best/"
   },
   {
     "icon": "CompactDisc",
@@ -28,6 +28,11 @@
     "icon": "Book",
     "name": "阅读",
     "link": "https://book.mmcool.site/"
+  },
+    {
+    "icon": "LocationArrow",
+    "name": "IP查询",
+    "link": "https://ip.mmcool.site/"
   },
   {
     "icon": "LaptopCode",
