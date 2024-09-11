@@ -34,6 +34,11 @@
     "name": "IP查询",
     "link": "https://ip.mmcool.site/"
   },
+      {
+    "icon": "Fire",
+    "name": "摸鱼热榜",
+    "link": "https://momoyu.cc/"
+  },
   {
     "icon": "LaptopCode",
     "name": "站点监测",
