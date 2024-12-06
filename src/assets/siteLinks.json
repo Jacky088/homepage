@@ -4,44 +4,34 @@
     "name": "博客",
     "link": "https://blog.mmcool.site/"
   },
-    {
-    "icon": "Cloud",
-    "name": "云盘",
-    "link": "https://drive.almondcloud.cn/"
-  },
-  {
-    "icon": "Image",
-    "name": "图床",
-    "link": "https://111666.best/"
-  },
-  {
-    "icon": "CompactDisc",
-    "name": "音乐",
-    "link": "https://music.mmcool.site/"
-  },
-  {
+   {
     "icon": "Compass",
-    "name": "网址导航",
+    "name": "网站导航",
     "link": "https://nav.mmcool.site/"
   },
-  {
+   {
     "icon": "Book",
     "name": "阅读",
     "link": "https://book.mmcool.site/"
   },
     {
-    "icon": "LocationArrow",
-    "name": "IP查询",
-    "link": "https://ip.mmcool.site/"
-  },
-      {
-    "icon": "Fire",
-    "name": "摸鱼热榜",
-    "link": "https://momoyu.cc/"
+    "icon": "Cloud",
+    "name": "杏仁云盘",
+    "link": "https://drive.almondcloud.cn/"
   },
   {
+    "icon": "Image",
+    "name": "16图床",
+    "link": "https://111666.best/"
+  },
+      {
+    "icon": "LocationArrow",
+    "name": "IP查询",
+    "link": "https://ipcheck.ing/"
+  },  
+  {
     "icon": "LaptopCode",
-    "name": "站点监测",
+    "name": "监测",
     "link": "https://jk.mmcool.site/status/service/"
   }
 ]
