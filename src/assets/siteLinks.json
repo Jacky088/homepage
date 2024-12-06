@@ -26,12 +26,17 @@
   },
       {
     "icon": "LocationArrow",
-    "name": "IP查询",
+    "name": "IP工具箱",
     "link": "https://ipcheck.ing/"
   },  
+      {
+    "icon": "CompactDisc",
+    "name": "网盘search",
+    "link": "https://www.aipan.me/"
+  }, 
   {
     "icon": "LaptopCode",
-    "name": "监测",
+    "name": "站点监测",
     "link": "https://jk.mmcool.site/status/service/"
   }
 ]
