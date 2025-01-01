@@ -1,35 +1,40 @@
 [
   {
     "icon": "Blog",
-    "name": "博客",
+    "name": "Blog",
     "link": "https://blog.mmcool.site/"
   },
      {
     "icon": "Youtube",
-    "name": "影视",
+    "name": "Film-Online",
     "link": "https://v.mmcoo.de/"
   },
    {
     "icon": "Book",
-    "name": "阅读",
+    "name": "Reading",
     "link": "https://book.mmcool.site/"
   },
      {
     "icon": "Compass",
-    "name": "网站导航",
+    "name": "Site Navigation",
     "link": "https://nav.mmcool.site/"
   },
+   {
+    "icon": "LaptopCode",
+    "name": "Web-Status",
+    "link": "https://stats.uptimerobot.com/skGUWMvSLy"
+  },
+      {
+    "icon": "LocationArrow",
+    "name": "IP-Check",
+    "link": "https://ipcheck.ing/"
+  }, 
        {
     "icon": "CloudDownloadAlt",
-    "name": "网盘search",
+    "name": "爱盼搜索",
     "link": "https://www.aipan.me/"
   }, 
         {
-    "icon": "LocationArrow",
-    "name": "IP工具箱",
-    "link": "https://ipcheck.ing/"
-  }, 
-    {
     "icon": "Cloud",
     "name": "杏仁云盘",
     "link": "https://drive.almondcloud.cn/"
@@ -38,10 +43,5 @@
     "icon": "Image",
     "name": "16图床",
     "link": "https://111666.best/"
-  },
-   {
-    "icon": "LaptopCode",
-    "name": "站点监测",
-    "link": "https://stats.uptimerobot.com/skGUWMvSLy"
-  }
+  }  
 ]
