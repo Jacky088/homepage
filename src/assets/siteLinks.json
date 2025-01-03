@@ -1,22 +1,22 @@
 [
   {
     "icon": "Blog",
-    "name": "Blog",
+    "name": "博客",
     "link": "https://blog.mmcool.site/"
   },
      {
     "icon": "Youtube",
-    "name": "Film-Online",
+    "name": "影视",
     "link": "https://v.mmcoo.de/"
   },
    {
     "icon": "Book",
-    "name": "Reading",
+    "name": "阅读",
     "link": "https://book.mmcool.site/"
   },
      {
     "icon": "Compass",
-    "name": "Site-Navigation",
+    "name": "网站导航",
     "link": "https://nav.mmcool.site/"
   },
    {
