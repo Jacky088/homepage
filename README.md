@@ -2,7 +2,15 @@
 
 一个简洁、美观的个人主页，基于 Vue 3 + Vite 构建。
 
-**在线预览：** [https://www.huzz.cn](https://www.huzz.cn)
+## 主页预览
+
+![主页预览](https://raw.githubusercontent.com/Jacky088/homepage/main/screenshots/main.jpg)
+
+## 一键部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage)
+[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
+[![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&repository-url=https://github.com/Jacky088/homepage)
 
 ## 功能特性
 
@@ -11,8 +19,6 @@
 - 一言（Hitokoto）随机句子展示
 - 网站快捷链接导航
 - 社交链接展示
-- 音乐播放器（网易云 / QQ音乐）
-- 天气信息展示（高德 API / wttr.in 备用）
 - PWA 支持，可安装为桌面应用
 - 星空渐变加载动画
 - Content Security Policy 安全策略
@@ -64,13 +70,8 @@ pnpm build
 | VITE_SITE_URL | 站点域名 | huzz.cn |
 | VITE_SITE_LOGO | 站点图标路径 | /images/icon/favicon.ico |
 | VITE_SITE_MAIN_LOGO | 主页 Logo 图片 | /images/icon/logo.png |
-| VITE_WEATHER_KEY | 高德天气 API Key（可选） | 留空则使用备用接口 |
 | VITE_SITE_START | 建站日期 | 2024 |
 | VITE_SITE_ICP | ICP 备案号（可选） | 苏ICP备xxxxx号 |
-| VITE_SONG_API | 音乐 API 地址 | https://163api.mmcoo.de/api |
-| VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
-| VITE_SONG_TYPE | 播放类型 | playlist |
-| VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | 2065854146 |
 
 ### 自定义链接
 
@@ -93,7 +94,7 @@ pnpm build
 2. Build command: `pnpm build`
 3. Build output directory: `dist`
 
-### EdgeOne / Netlify
+### EdgeOne Pages
 
 同上，构建命令 `pnpm build`，输出目录 `dist`。
 
