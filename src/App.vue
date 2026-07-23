@@ -20,10 +20,10 @@
       <Icon
         class="menu"
         size="24"
-        v-show="!store.backgroundShow"
+        v-show="!store.backgroundShow && !store.mobileOpenState"
         @click="store.mobileOpenState = !store.mobileOpenState"
       >
-        <component :is="store.mobileOpenState ? CloseSmall : HamburgerButton" />
+        <component :is="HamburgerButton" />
       </Icon>
       <!-- 页脚 -->
       <Transition name="fade" mode="out-in">

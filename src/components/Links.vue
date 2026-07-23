@@ -1,5 +1,6 @@
 <template>
   <div v-if="siteLinks[0]" :class="['links', { 'mobile-open': store.mobileOpenState }]">
+    <!-- PC: 横排文字链接 -->
     <a
       v-for="item in siteLinks"
       :key="item.name"
@@ -9,13 +10,62 @@
       {{ item.name }}
     </a>
   </div>
+
+  <!-- 移动端: 底部抽屉面板 -->
+  <Teleport to="body">
+    <Transition name="drawer">
+      <div v-if="store.mobileOpenState" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
+        <div class="mobile-drawer" @click.stop>
+          <div class="drawer-header">
+            <span class="drawer-title">网站列表</span>
+            <span class="drawer-close" @click="store.mobileOpenState = false">&times;</span>
+          </div>
+          <div class="drawer-grid">
+            <a
+              v-for="item in siteLinks"
+              :key="item.name"
+              class="grid-item"
+              @click="jumpLink(item)"
+            >
+              <div class="grid-icon">
+                <Icon size="22">
+                  <component :is="siteIcon[item.icon]" />
+                </Icon>
+              </div>
+              <span class="grid-name">{{ item.name }}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
+import { Icon } from "@vicons/utils";
+import { Blog, Terminal, Cloud, Compass, Book, Fire, LaptopCode, StickyNote, Staylinked, AddressCard, Toolbox, Github, Image, Info } from "@vicons/fa";
 import { mainStore } from "@/store";
 import siteLinks from "@/assets/siteLinks.json";
 
 const store = mainStore();
+
+// 网站链接图标
+const siteIcon = {
+  Blog,
+  Cloud,
+  Github,
+  Compass,
+  Book,
+  Fire,
+  LaptopCode,
+  StickyNote,
+  Staylinked,
+  AddressCard,
+  Toolbox,
+  Terminal,
+  Info,
+  Image,
+};
 
 // 链接跳转
 const jumpLink = (data) => {
@@ -37,6 +87,7 @@ const jumpLink = (data) => {
 </script>
 
 <style lang="scss" scoped>
+// PC 端横排样式
 .links {
   position: absolute;
   top: 18px;
@@ -97,35 +148,138 @@ const jumpLink = (data) => {
     }
   }
 
+  // 移动端隐藏 PC 版横排
   @media (max-width: 720px) {
-    position: fixed;
-    top: 0;
-    right: 0;
-    left: auto;
-    height: 100vh;
-    width: 260px;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 24px;
-    padding: 80px 30px 40px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(20px);
-    transform: translateX(100%);
-    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-    z-index: 15;
-    flex-wrap: nowrap;
-    max-width: none;
+    display: none;
+  }
+}
 
-    &.mobile-open {
-      transform: translateX(0);
+// 移动端底部抽屉
+.mobile-drawer-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  @media (min-width: 721px) {
+    display: none;
+  }
+
+  .mobile-drawer {
+    width: 100%;
+    max-height: 70vh;
+    background: rgba(30, 30, 40, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 20px 20px 0 0;
+    padding: 0 20px 30px;
+    overflow-y: auto;
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 4px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 16px;
+
+      .drawer-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 1px;
+      }
+
+      .drawer-close {
+        font-size: 1.6rem;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+
+        &:active {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
     }
 
-    .link-item {
-      font-size: 1.1rem;
-      opacity: 1;
-      padding-bottom: 8px;
+    .drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+
+      .grid-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px 8px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+        text-decoration: none;
+
+        &:active {
+          transform: scale(0.95);
+          background: rgba(255, 255, 255, 0.12);
+        }
+
+        .grid-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
+          color: #fff;
+        }
+
+        .grid-name {
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.85);
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+      }
     }
+  }
+}
+
+// 抽屉动画
+.drawer-enter-active {
+  transition: opacity 0.3s ease;
+  .mobile-drawer {
+    transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+}
+.drawer-leave-active {
+  transition: opacity 0.25s ease;
+  .mobile-drawer {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 1, 1);
+  }
+}
+.drawer-enter-from,
+.drawer-leave-to {
+  opacity: 0;
+  .mobile-drawer {
+    transform: translateY(100%);
   }
 }
 </style>
