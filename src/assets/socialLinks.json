@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Github",
+    "icon": "/images/icon/github.png",
+    "tip": "去 Github 看看",
+    "url": "https://git.mmcoo.de/"
+  },
+  {
+    "name": "Email",
+    "icon": "/images/icon/email.png",
+    "tip": "来封 Email ~",
+    "url": "mailto:mumuseeu@163.com"
+  },
+   {
+    "name": "Telegram",
+    "icon": "/images/icon/telegram.png",
+    "tip": "你懂的 ~",
+    "url": "https://t.me/Tiger_broke_bot"
+  }
+]

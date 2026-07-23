@@ -1,0 +1,63 @@
+[
+  {
+    "icon": "Blog",
+    "name": "博客Blog",
+    "link": "https://blog.huzz.cn/"
+  },
+     {
+    "icon": "Terminal",
+    "name": "倒计时",
+    "link": "https://time.huzz.cn/"
+  },
+     {
+    "icon": "Staylinked",
+    "name": "订阅提醒",
+    "link": "https://notice.mmcoo.de/"
+  },
+     {
+    "icon": "Compass",
+    "name": "网站导航",
+    "link": "https://nav.huzz.cn/"
+  },
+     {
+    "icon": "AddressCard",
+    "name": "地址生成",
+    "link": "https://dizhi.mmcoo.de/"
+  },
+       {
+    "icon": "Toolbox",
+    "name": "IT工具箱",
+    "link": "https://tools.mmcoo.de/"
+  },
+   {
+    "icon": "LaptopCode",
+    "name": "网站状态",
+    "link": "https://status.mmcoo.de/"
+  },
+      {
+    "icon": "Image",
+    "name": "16图床",
+    "link": "https://111666.best/"
+  }, 
+     {
+    "icon": "Github",
+    "name": "Github加速",
+    "link": "https://gh-proxy.com/"
+  }, 
+    {
+    "icon": "Info",
+    "name": "IP查询",
+    "link": "https://ippure.com/"
+  }, 
+     {
+    "icon": "Fire",
+    "name": "每日热榜",
+    "link": "https://allhot.top/"
+  }, 
+
+  {
+    "icon": "Cloud",
+    "name": "文件快递柜",
+    "link": "https://quwenjian.cc/"
+  }  
+]
