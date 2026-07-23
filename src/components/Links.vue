@@ -91,17 +91,18 @@ const jumpLink = (data) => {
 .links {
   position: absolute;
   top: 18px;
-  left: 210px;
+  left: 195px;
   height: 52px;
   z-index: 10;
   display: flex;
   flex-direction: row;
-  align-items: center;
-  gap: 32px;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  gap: 28px;
   animation: fade 0.5s;
 
   .link-item {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     color: #fff;
     cursor: pointer;
     white-space: nowrap;
