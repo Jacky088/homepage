@@ -175,9 +175,11 @@ const jumpLink = (data) => {
   .mobile-drawer {
     width: 100%;
     max-height: 70vh;
-    background: rgba(30, 30, 40, 0.92);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(30px) saturate(1.3);
+    -webkit-backdrop-filter: blur(30px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: none;
     border-radius: 20px 20px 0 0;
     padding: 0 20px 30px;
     overflow-y: auto;
@@ -227,21 +229,22 @@ const jumpLink = (data) => {
         justify-content: center;
         padding: 16px 8px;
         border-radius: 14px;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         cursor: pointer;
         transition: background 0.2s, transform 0.2s;
         text-decoration: none;
 
         &:active {
           transform: scale(0.95);
-          background: rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.18);
         }
 
         .grid-icon {
           width: 40px;
           height: 40px;
           border-radius: 12px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.1);
           display: flex;
           align-items: center;
           justify-content: center;

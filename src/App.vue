@@ -25,6 +25,19 @@
       >
         <component :is="HamburgerButton" />
       </Icon>
+      <!-- PC端音乐播放器入口 -->
+      <div
+        class="music-btn"
+        v-show="!store.backgroundShow"
+        @click="store.musicOpenState = !store.musicOpenState"
+        title="音乐播放器"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+      </div>
       <!-- 页脚 -->
       <Transition name="fade" mode="out-in">
         <Footer class="f-ter" v-show="!store.backgroundShow && !store.setOpenState" />
@@ -174,6 +187,31 @@ onBeforeUnmount(() => {
       transform: translateY(2px);
     }
     @media (min-width: 721px) {
+      display: none;
+    }
+  }
+  .music-btn {
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    height: 52px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 8px;
+    cursor: pointer;
+    color: #fff;
+    opacity: 0.85;
+    transition: opacity 0.3s, transform 0.3s;
+    animation: fade 0.5s;
+    &:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    &:active {
+      transform: scale(0.95);
+    }
+    @media (max-width: 720px) {
       display: none;
     }
   }

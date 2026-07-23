@@ -202,11 +202,13 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList });
 
 <style lang="scss" scoped>
 .aplayer {
-  width: 80%;
-  border-radius: 12px;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
   font-family: "HarmonyOS_Regular", sans-serif !important;
   :deep(.aplayer-body) {
     background-color: transparent;
+    border-radius: 16px 16px 0 0;
     .aplayer-pic {
       display: none;
     }
@@ -214,6 +216,7 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList });
       margin-left: 0;
       background-color: #ffffff40;
       border-color: transparent !important;
+      border-radius: 16px;
       .aplayer-music {
         flex-grow: initial;
         margin-bottom: 2px;
@@ -263,6 +266,7 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList });
     margin-top: 6px;
     height: v-bind(listHeight);
     background-color: transparent;
+    border-radius: 0 0 16px 16px;
     ol {
       &::-webkit-scrollbar-track {
         background-color: transparent;

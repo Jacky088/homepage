@@ -123,12 +123,17 @@ a:hover {
   backdrop-filter: blur(10px);
   border-radius: 25px !important;
   border-color: transparent !important;
+  top: 80px !important;
 
   .el-message__badge {
     display: none;
   }
   .el-message__content {
     white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    top: 70px !important;
   }
 }
 
