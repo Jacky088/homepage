@@ -6,12 +6,6 @@
 
 ![主页预览](https://raw.githubusercontent.com/Jacky088/homepage/main/screenshots/main.jpg)
 
-## 一键部署
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage)
-[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
-[![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&repository-url=https://github.com/Jacky088/homepage)
-
 ## 功能特性
 
 - 响应式布局，适配 PC 和移动端
@@ -19,6 +13,7 @@
 - 一言（Hitokoto）随机句子展示
 - 网站快捷链接导航
 - 社交链接展示
+- 音乐播放器（网易云 / QQ音乐）
 - PWA 支持，可安装为桌面应用
 - 星空渐变加载动画
 - Content Security Policy 安全策略
@@ -72,11 +67,32 @@ pnpm build
 | VITE_SITE_MAIN_LOGO | 主页 Logo 图片 | /images/icon/logo.png |
 | VITE_SITE_START | 建站日期 | 2024 |
 | VITE_SITE_ICP | ICP 备案号（可选） | 苏ICP备xxxxx号 |
+| VITE_SONG_API | 音乐 API 地址 | https://163api.mmcoo.de/api |
+| VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
+| VITE_SONG_TYPE | 播放类型 | playlist |
+| VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | 2065854146 |
 
 ### 自定义链接
 
 - 网站链接：编辑 `src/assets/siteLinks.json`
 - 社交链接：编辑 `src/assets/socialLinks.json`
+
+### 音乐播放器
+
+音乐播放器基于 APlayer，通过 Meting API 获取歌单数据。
+
+**配置步骤：**
+
+1. 部署 Meting API 服务（参考 [Meting-API](https://github.com/xizeyoupan/Meting-API#deno-deploy)）
+2. 在 `.env` 中填写 `VITE_SONG_API` 为你的 API 地址
+3. 设置 `VITE_SONG_SERVER` 为音乐平台（`netease` 或 `tencent`）
+4. 设置 `VITE_SONG_ID` 为歌单 ID（网易云歌单 ID 可从歌单 URL 中获取）
+5. 若不需要播放器，将 `VITE_SONG_ID` 设为空即可
+
+**注意事项：**
+- QQ 音乐歌单建议不超过 50 首
+- 如果 API 不通或网络异常，播放器会自动提示初始化失败并禁用入口
+- 备用 API：`https://api.wuenci.com/meting/api/`
 
 ## 部署
 
@@ -84,11 +100,15 @@ pnpm build
 
 ### Vercel
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage)
+
 1. 导入 GitHub 仓库
 2. Framework Preset 选择 Vite
 3. 自动识别构建命令和输出目录
 
 ### Cloudflare Pages
+
+[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
 
 1. 连接 GitHub 仓库
 2. Build command: `pnpm build`
@@ -96,7 +116,9 @@ pnpm build
 
 ### EdgeOne Pages
 
-同上，构建命令 `pnpm build`，输出目录 `dist`。
+[![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&repository-url=https://github.com/Jacky088/homepage)
+
+构建命令 `pnpm build`，输出目录 `dist`。
 
 ### Docker
 
