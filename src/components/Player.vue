@@ -221,13 +221,19 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList, player });
       .aplayer-music {
         flex-grow: initial;
         margin-bottom: 2px;
-        overflow: initial;
+        overflow: hidden;
         .aplayer-title {
           font-size: 16px;
           margin-right: 6px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         .aplayer-author {
           color: #efefef;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
       .aplayer-lrc {
@@ -274,6 +280,7 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList, player });
       }
       li {
         border-color: transparent;
+        overflow: hidden;
         &.aplayer-list-light {
           background: #ffffff40;
           border-radius: 8px;
@@ -285,6 +292,12 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList, player });
         .aplayer-list-index,
         .aplayer-list-author {
           color: #efefef;
+        }
+        .aplayer-list-title,
+        .aplayer-list-author {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }
