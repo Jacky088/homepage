@@ -1,80 +1,79 @@
 <template>
-  <!-- 音乐控制面板 - 居中浮层 -->
+  <!-- 共享背景遮罩 - 始终不动 -->
   <Teleport to="body">
-    <Transition name="music-panel">
-      <div class="music-overlay" v-show="store.musicOpenState && !musicListShow" @click="store.musicOpenState = false">
-        <div class="music-panel" @click.stop>
-          <!-- 关闭按钮 -->
-          <div class="panel-close" @click="store.musicOpenState = false">
-            <close-one theme="filled" size="24" fill="#ffffff80" />
-          </div>
-          <!-- 唱片动画 -->
-          <div :class="['disc', { spinning: store.playerState }]">
-            <div class="disc-inner">
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="1.5">
-                <path d="M9 18V5l12-2v13" stroke-linecap="round" stroke-linejoin="round" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
+    <Transition name="music-overlay-fade">
+      <div class="music-overlay" v-show="store.musicOpenState" @click="closeAll">
+        <!-- 播放器面板 -->
+        <Transition name="panel-fade">
+          <div class="music-panel" v-show="!musicListShow" @click.stop>
+            <!-- 关闭按钮 -->
+            <div class="panel-close" @click="closeAll">
+              <close-one theme="filled" size="24" fill="#ffffff80" />
+            </div>
+            <!-- 唱片动画 -->
+            <div :class="['disc', { spinning: store.playerState }]">
+              <div class="disc-inner">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="1.5">
+                  <path d="M9 18V5l12-2v13" stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              </div>
+            </div>
+            <!-- 歌曲信息 -->
+            <div class="song-info">
+              <span class="song-name text-hidden">{{ store.getPlayerData.name || "未播放音乐" }}</span>
+              <span class="song-artist text-hidden">{{ store.getPlayerData.artist || "点击播放" }}</span>
+            </div>
+            <!-- 播放控制 -->
+            <div class="controls">
+              <div class="ctrl-btn" @click="changeMusicIndex(0)">
+                <go-start theme="filled" size="30" fill="#ffffffcc" />
+              </div>
+              <div class="ctrl-btn play-btn" @click="changePlayState">
+                <play-one v-if="!store.playerState" theme="filled" size="36" fill="#fff" />
+                <pause v-else theme="filled" size="36" fill="#fff" />
+              </div>
+              <div class="ctrl-btn" @click="changeMusicIndex(1)">
+                <go-end theme="filled" size="30" fill="#ffffffcc" />
+              </div>
+            </div>
+            <!-- 音量控制 -->
+            <div class="volume-bar">
+              <div class="vol-icon">
+                <volume-mute theme="filled" size="16" fill="#ffffff99" v-if="volumeNum == 0" />
+                <volume-small theme="filled" size="16" fill="#ffffff99" v-else-if="volumeNum < 0.7" />
+                <volume-notice theme="filled" size="16" fill="#ffffff99" v-else />
+              </div>
+              <el-slider v-model="volumeNum" :show-tooltip="false" :min="0" :max="1" :step="0.01" />
+            </div>
+            <!-- 底部按钮 -->
+            <div class="panel-footer">
+              <span class="footer-btn" @click="openMusicList()">打开列表</span>
             </div>
           </div>
-          <!-- 歌曲信息 -->
-          <div class="song-info">
-            <span class="song-name text-hidden">{{ store.getPlayerData.name || "未播放音乐" }}</span>
-            <span class="song-artist text-hidden">{{ store.getPlayerData.artist || "点击播放" }}</span>
-          </div>
-          <!-- 播放控制 -->
-          <div class="controls">
-            <div class="ctrl-btn" @click="changeMusicIndex(0)">
-              <go-start theme="filled" size="30" fill="#ffffffcc" />
+        </Transition>
+
+        <!-- 播放列表 -->
+        <Transition name="panel-fade">
+          <div class="music-list-box" v-show="musicListShow" @click.stop>
+            <div class="list-close" @click="closeMusicList()">
+              <close-one theme="filled" size="24" fill="#ffffff80" />
             </div>
-            <div class="ctrl-btn play-btn" @click="changePlayState">
-              <play-one v-if="!store.playerState" theme="filled" size="36" fill="#fff" />
-              <pause v-else theme="filled" size="36" fill="#fff" />
-            </div>
-            <div class="ctrl-btn" @click="changeMusicIndex(1)">
-              <go-end theme="filled" size="30" fill="#ffffffcc" />
-            </div>
+            <Player
+              ref="playerRef"
+              :songServer="playerData.server"
+              :songType="playerData.type"
+              :songId="playerData.id"
+              :volume="volumeNum"
+              :listFolded="false"
+              :listMaxHeight="480"
+            />
           </div>
-          <!-- 音量控制 -->
-          <div class="volume-bar">
-            <div class="vol-icon">
-              <volume-mute theme="filled" size="16" fill="#ffffff99" v-if="volumeNum == 0" />
-              <volume-small theme="filled" size="16" fill="#ffffff99" v-else-if="volumeNum < 0.7" />
-              <volume-notice theme="filled" size="16" fill="#ffffff99" v-else />
-            </div>
-            <el-slider v-model="volumeNum" :show-tooltip="false" :min="0" :max="1" :step="0.01" />
-          </div>
-          <!-- 底部按钮 -->
-          <div class="panel-footer">
-            <span class="footer-btn" @click="openMusicList()">打开列表</span>
-          </div>
-        </div>
+        </Transition>
       </div>
     </Transition>
   </Teleport>
-
-  <!-- 音乐列表弹窗 - 打开列表时隐藏播放器，关闭列表时恢复 -->
-  <div class="music-list" v-show="musicListShow" @click="closeMusicList()">
-    <div class="list" @click.stop>
-      <close-one
-        class="close"
-        theme="filled"
-        size="24"
-        fill="#ffffff80"
-        @click="closeMusicList()"
-      />
-      <Player
-        ref="playerRef"
-        :songServer="playerData.server"
-        :songType="playerData.type"
-        :songId="playerData.id"
-        :volume="volumeNum"
-        :listFolded="false"
-        :listMaxHeight="480"
-      />
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -107,15 +106,35 @@ const playerData = reactive({
 // 开启播放列表
 const openMusicList = () => {
   musicListShow.value = true;
+  // 强制展开 APlayer 列表 DOM
   nextTick(() => {
-    playerRef.value.toggleList();
+    const listEl = document.querySelector('.music-list-box .aplayer-list');
+    if (listEl) {
+      listEl.style.display = 'block';
+      listEl.style.height = '480px';
+      const ol = listEl.querySelector('ol');
+      if (ol) {
+        ol.style.maxHeight = '480px';
+        ol.style.overflow = 'auto';
+      }
+    }
   });
 };
 
-// 关闭播放列表
+// 关闭播放列表（回到播放器面板）
 const closeMusicList = () => {
-  playerRef.value.toggleList();
   musicListShow.value = false;
+};
+
+// 关闭全部（回到主页）
+const closeAll = () => {
+  if (musicListShow.value) {
+    // 如果列表打开，先关闭列表回到面板
+    musicListShow.value = false;
+  } else {
+    // 面板状态，关闭全部
+    store.musicOpenState = false;
+  }
 };
 
 // 音乐播放暂停
@@ -357,89 +376,99 @@ watch(
   to { transform: rotate(360deg); }
 }
 
-.music-panel-enter-active {
+// 遮罩层淡入淡出
+.music-overlay-fade-enter-active,
+.music-overlay-fade-leave-active {
   transition: opacity 0.3s ease;
-  .music-panel {
-    transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
-  }
 }
-.music-panel-leave-active {
-  transition: opacity 0.25s ease;
-  .music-panel {
-    transition: transform 0.25s ease, opacity 0.25s ease;
-  }
-}
-.music-panel-enter-from,
-.music-panel-leave-to {
+.music-overlay-fade-enter-from,
+.music-overlay-fade-leave-to {
   opacity: 0;
-  .music-panel {
-    transform: scale(0.9) translateY(20px);
-    opacity: 0;
-  }
 }
 
-// 音乐列表弹窗
-.music-list {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #00000080;
-  backdrop-filter: blur(20px);
-  z-index: 100;
+// 面板/列表切换渐变
+.panel-fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.panel-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.panel-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
+}
+.panel-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+</style>
+
+<style lang="scss">
+// 音乐列表面板（在遮罩内，非 scoped 因为内容动态）
+.music-list-box {
+  position: absolute;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  width: 640px;
+  height: 600px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
 
-  .list {
-    position: relative;
+  @media (max-width: 720px) {
+    width: 90%;
+    height: 80vh;
+  }
+
+  .list-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    width: 640px;
-    height: 600px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    overflow: hidden;
-
-    @media (max-width: 720px) {
-      width: 90%;
-      height: 80vh;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    background: transparent;
+    transition: transform 0.2s, opacity 0.2s;
+    opacity: 0.5;
+    &:hover {
+      transform: scale(1.2);
+      opacity: 1;
     }
-
-    .close {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      cursor: pointer;
-      z-index: 10;
-      background: transparent;
-      transition: transform 0.2s, opacity 0.2s;
-      opacity: 0.5;
-      &:hover {
-        transform: scale(1.2);
-        opacity: 1;
-      }
-      &:active {
-        transform: scale(0.9);
-      }
+    &:active {
+      transform: scale(0.9);
     }
+  }
 
-    :deep(.aplayer) {
-      width: 100%;
-      height: 100%;
+  .aplayer {
+    width: 100%;
+    height: 100%;
+  }
+
+  // 强制展开列表（覆盖 APlayer inline style）
+  .aplayer .aplayer-list,
+  .aplayer .aplayer-list[style] {
+    display: block !important;
+    height: 480px !important;
+    max-height: 480px !important;
+
+    ol,
+    ol[style] {
+      max-height: 480px !important;
+      height: 480px !important;
+      overflow-y: auto !important;
+      display: block !important;
     }
   }
 }

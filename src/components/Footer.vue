@@ -66,9 +66,6 @@ const siteUrl = computed(() => {
 <style lang="scss" scoped>
 #footer {
   width: 100%;
-  position: absolute;
-  bottom: 0;
-  left: 0;
   height: 46px;
   line-height: 46px;
   text-align: center;

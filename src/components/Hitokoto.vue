@@ -75,22 +75,21 @@ onMounted(() => {
 
   .content {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 20px;
+    max-width: 70vw;
     .text {
-      font-size: 2.2rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 70vw;
+      font-size: 2rem;
+      text-align: justify;
+      line-height: 1.5;
     }
     .from {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       font-weight: bold;
-      white-space: nowrap;
       opacity: 0.8;
+      margin-top: 12px;
+      align-self: flex-end;
+      white-space: nowrap;
     }
   }
 

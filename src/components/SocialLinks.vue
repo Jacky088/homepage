@@ -47,6 +47,18 @@
           />
         </svg>
       </a>
+      <!-- 音乐播放器 -->
+      <a
+        style="cursor: pointer"
+        @click="handleMusicClick"
+        @mouseenter="socialTip = '来电音乐听听？'"
+        @mouseleave="socialTip = '通过这里联系我'"
+      >
+        <svg class="icon" viewBox="0 0 24 24" width="24" height="24">
+          <circle cx="12" cy="12" r="12" fill="#ffffff" />
+          <path d="M10 7.5v6.17a2.5 2.5 0 1 0 1.5 2.33V9.5l4-1v4.67a2.5 2.5 0 1 0 1.5 2.33V7l-7 1.5z" fill="#333" />
+        </svg>
+      </a>
     </div>
     <span class="tip">{{ socialTip }}</span>
   </div>
@@ -60,6 +72,18 @@ const store = mainStore();
 
 // 社交链接提示
 const socialTip = ref("通过这里联系我");
+
+// 点击音乐按钮
+const handleMusicClick = () => {
+  if (store.musicIsOk === false) {
+    ElMessage({
+      message: "音乐播放器初始化失败！",
+      grouping: true,
+    });
+    return;
+  }
+  store.musicOpenState = !store.musicOpenState;
+};
 
 // 切换背景类型
 const toggleBackground = () => {
@@ -81,10 +105,6 @@ const toggleBackground = () => {
 
 <style lang="scss" scoped>
 .social {
-  position: absolute;
-  bottom: 56px;
-  left: 24px;
-  z-index: 10;
   display: flex;
   align-items: center;
   height: 42px;
@@ -129,9 +149,7 @@ const toggleBackground = () => {
     }
   }
   @media (max-width: 720px) {
-    bottom: 52px;
-    left: 50%;
-    transform: translateX(-50%);
+    justify-content: center;
   }
 }
 </style>

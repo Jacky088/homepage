@@ -14,11 +14,13 @@
   <!-- 移动端: 底部抽屉面板 -->
   <Teleport to="body">
     <Transition name="drawer">
-      <div v-if="store.mobileOpenState" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
+      <div v-show="store.mobileOpenState" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
         <div class="mobile-drawer" @click.stop>
           <div class="drawer-header">
             <span class="drawer-title">网站列表</span>
-            <span class="drawer-close" @click="store.mobileOpenState = false">&times;</span>
+            <span class="drawer-close" @click="store.mobileOpenState = false">
+              <close-one theme="filled" size="24" fill="#ffffff80" />
+            </span>
           </div>
           <div class="drawer-grid">
             <a
@@ -43,6 +45,7 @@
 
 <script setup>
 import { Icon } from "@vicons/utils";
+import { CloseOne } from "@icon-park/vue-next";
 import { Blog, Terminal, Cloud, Compass, Book, Fire, LaptopCode, StickyNote, Staylinked, AddressCard, Toolbox, Github, Image, Info } from "@vicons/fa";
 import { mainStore } from "@/store";
 import siteLinks from "@/assets/siteLinks.json";
@@ -92,6 +95,7 @@ const jumpLink = (data) => {
   position: absolute;
   top: 18px;
   left: 195px;
+  right: 24px;
   height: 52px;
   z-index: 10;
   display: flex;
@@ -183,6 +187,7 @@ const jumpLink = (data) => {
     border-radius: 20px 20px 0 0;
     padding: 0 20px 30px;
     overflow-y: auto;
+    will-change: transform;
 
     .drawer-header {
       display: flex;
@@ -200,8 +205,6 @@ const jumpLink = (data) => {
       }
 
       .drawer-close {
-        font-size: 1.6rem;
-        color: rgba(255, 255, 255, 0.6);
         cursor: pointer;
         width: 32px;
         height: 32px;
@@ -209,10 +212,16 @@ const jumpLink = (data) => {
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        transition: background 0.2s;
+        background: transparent;
+        transition: transform 0.2s, opacity 0.2s;
+        opacity: 0.5;
 
+        &:hover {
+          transform: scale(1.2);
+          opacity: 1;
+        }
         &:active {
-          background: rgba(255, 255, 255, 0.1);
+          transform: scale(0.9);
         }
       }
     }
@@ -260,6 +269,7 @@ const jumpLink = (data) => {
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: 100%;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
       }
     }
@@ -268,18 +278,23 @@ const jumpLink = (data) => {
 
 // 抽屉动画
 .drawer-enter-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
   .mobile-drawer {
-    transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.35s 0.12s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
 }
 .drawer-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s 0.1s ease;
   .mobile-drawer {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 1, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1);
   }
 }
-.drawer-enter-from,
+.drawer-enter-from {
+  opacity: 0;
+  .mobile-drawer {
+    transform: translateY(100%);
+  }
+}
 .drawer-leave-to {
   opacity: 0;
   .mobile-drawer {
