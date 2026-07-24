@@ -198,7 +198,7 @@ const loadMusicError = () => {
 };
 
 // 暴露子组件方法
-defineExpose({ playToggle, changeVolume, changeSong, toggleList });
+defineExpose({ playToggle, changeVolume, changeSong, toggleList, player });
 </script>
 
 <style lang="scss" scoped>

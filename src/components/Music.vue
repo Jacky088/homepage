@@ -25,6 +25,15 @@
               <span class="song-name text-hidden">{{ store.getPlayerData.name || "未播放音乐" }}</span>
               <span class="song-artist text-hidden">{{ store.getPlayerData.artist || "点击播放" }}</span>
             </div>
+            <!-- 进度条 -->
+            <div class="progress-bar">
+              <span class="time-text">{{ formatTime(currentTime) }}</span>
+              <div class="progress-track" ref="progressTrackRef" @mousedown="onProgressSeek" @touchstart="onProgressSeek">
+                <div class="progress-filled" :style="{ width: progressPercent + '%' }"></div>
+                <div class="progress-thumb" :style="{ left: progressPercent + '%' }"></div>
+              </div>
+              <span class="time-text">{{ formatTime(duration) }}</span>
+            </div>
             <!-- 播放控制 -->
             <div class="controls">
               <div class="ctrl-btn" @click="changeMusicIndex(0)">
@@ -103,6 +112,102 @@ const playerData = reactive({
   id: import.meta.env.VITE_SONG_ID,
 });
 
+// 进度条相关
+const currentTime = ref(0);
+const duration = ref(0);
+const progressTrackRef = ref(null);
+const isSeeking = ref(false);
+let progressTimer = null;
+
+const progressPercent = computed(() => {
+  if (duration.value <= 0) return 0;
+  return Math.min((currentTime.value / duration.value) * 100, 100);
+});
+
+// 格式化时间 mm:ss
+const formatTime = (seconds) => {
+  if (!seconds || isNaN(seconds)) return "0:00";
+  const min = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60);
+  return `${min}:${sec.toString().padStart(2, "0")}`;
+};
+
+// 获取底层 audio 元素
+const getAudioElement = () => {
+  try {
+    return playerRef.value?.player?.audioRef;
+  } catch {
+    return null;
+  }
+};
+
+// 同步进度
+const syncProgress = () => {
+  if (isSeeking.value) return;
+  const audio = getAudioElement();
+  if (audio) {
+    currentTime.value = audio.currentTime || 0;
+    duration.value = audio.duration || 0;
+  }
+};
+
+const startProgressSync = () => {
+  stopProgressSync();
+  progressTimer = setInterval(syncProgress, 300);
+};
+
+const stopProgressSync = () => {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+};
+
+// 进度条拖动/点击 Seek
+const onProgressSeek = (e) => {
+  e.preventDefault();
+  isSeeking.value = true;
+  const track = progressTrackRef.value;
+  if (!track) return;
+
+  const seekToPosition = (clientX) => {
+    const rect = track.getBoundingClientRect();
+    let percent = (clientX - rect.left) / rect.width;
+    percent = Math.max(0, Math.min(1, percent));
+    currentTime.value = percent * duration.value;
+  };
+
+  const applySeek = () => {
+    const audio = getAudioElement();
+    if (audio && duration.value > 0) {
+      audio.currentTime = currentTime.value;
+    }
+    isSeeking.value = false;
+  };
+
+  if (e.type === "touchstart") {
+    seekToPosition(e.touches[0].clientX);
+    const onTouchMove = (ev) => seekToPosition(ev.touches[0].clientX);
+    const onTouchEnd = () => {
+      applySeek();
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+    document.addEventListener("touchmove", onTouchMove);
+    document.addEventListener("touchend", onTouchEnd);
+  } else {
+    seekToPosition(e.clientX);
+    const onMouseMove = (ev) => seekToPosition(ev.clientX);
+    const onMouseUp = () => {
+      applySeek();
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
+};
+
 // 开启播放列表
 const openMusicList = () => {
   musicListShow.value = true;
@@ -159,6 +264,12 @@ onMounted(() => {
   });
   // 挂载方法至 window
   window.$openList = openMusicList;
+  // 启动进度同步
+  startProgressSync();
+});
+
+onBeforeUnmount(() => {
+  stopProgressSync();
 });
 
 // 监听音量变化
@@ -191,8 +302,9 @@ watch(
 
 .music-panel {
   position: relative;
-  width: 420px;
-  padding: 40px 36px 30px;
+  width: 380px;
+  max-width: 88vw;
+  padding: 36px 32px 26px;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(40px) saturate(1.4);
@@ -202,14 +314,14 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
 
   .panel-close {
     position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 32px;
-    height: 32px;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -229,8 +341,8 @@ watch(
   }
 
   .disc {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 100%);
     border: 2px solid rgba(255, 255, 255, 0.15);
@@ -243,8 +355,8 @@ watch(
     }
 
     .disc-inner {
-      width: 60px;
-      height: 60px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.06);
       display: flex;
@@ -258,14 +370,14 @@ watch(
     width: 100%;
     .song-name {
       display: block;
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       font-weight: 600;
       color: #fff;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .song-artist {
       display: block;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       color: rgba(255, 255, 255, 0.6);
     }
   }
@@ -274,14 +386,14 @@ watch(
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 32px;
+    gap: 28px;
 
     .ctrl-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       cursor: pointer;
       transition: background 0.2s, transform 0.2s;
@@ -299,8 +411,8 @@ watch(
     }
 
     .play-btn {
-      width: 68px;
-      height: 68px;
+      width: 60px;
+      height: 60px;
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.15);
 
@@ -369,6 +481,123 @@ watch(
       }
     }
   }
+
+  // 进度条样式
+  .progress-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+
+    .time-text {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.5);
+      min-width: 32px;
+      text-align: center;
+      user-select: none;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      touch-action: none;
+
+      &::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .progress-filled {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.8);
+        pointer-events: none;
+      }
+
+      .progress-thumb {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        transition: transform 0.1s;
+      }
+
+      &:hover .progress-thumb,
+      &:active .progress-thumb {
+        transform: translate(-50%, -50%) scale(1.3);
+      }
+    }
+  }
+
+  // 移动端自适应
+  @media (max-width: 480px) {
+    width: 92vw;
+    max-width: 92vw;
+    padding: 28px 20px 20px;
+    gap: 14px;
+    border-radius: 22px;
+
+    .disc {
+      width: 64px;
+      height: 64px;
+      .disc-inner {
+        width: 40px;
+        height: 40px;
+        svg {
+          width: 22px;
+          height: 22px;
+        }
+      }
+    }
+
+    .song-info {
+      .song-name { font-size: 1rem; }
+      .song-artist { font-size: 0.8rem; }
+    }
+
+    .controls {
+      gap: 24px;
+      .ctrl-btn { width: 40px; height: 40px; }
+      .play-btn { width: 52px; height: 52px; }
+    }
+  }
+
+  @media (max-height: 600px) {
+    gap: 10px;
+    padding: 24px 20px 16px;
+
+    .disc {
+      width: 56px;
+      height: 56px;
+      .disc-inner { width: 36px; height: 36px; }
+    }
+
+    .controls {
+      gap: 20px;
+      .play-btn { width: 48px; height: 48px; }
+    }
+  }
 }
 
 @keyframes disc-spin {
@@ -424,7 +653,8 @@ watch(
 
   @media (max-width: 720px) {
     width: 90%;
-    height: 80vh;
+    height: 70vh;
+    max-height: 500px;
   }
 
   .list-close {
