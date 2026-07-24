@@ -1,4 +1,4 @@
-# 木木的主页
+# Homepage主页
 
 一个简洁、美观的个人主页，基于 Vue 3 + Vite 构建。
 
@@ -16,7 +16,6 @@
 - 音乐播放器（网易云 / QQ音乐）
 - PWA 支持，可安装为桌面应用
 - 星空渐变加载动画
-- Content Security Policy 安全策略
 
 ## 技术栈
 
@@ -60,17 +59,17 @@ pnpm build
 
 | 变量名 | 说明 | 示例 |
 | --- | --- | --- |
-| VITE_SITE_NAME | 站点名称 | 木木的主页 |
-| VITE_SITE_AUTHOR | 作者名 | 木木 |
-| VITE_SITE_URL | 站点域名 | huzz.cn |
+| VITE_SITE_NAME | 站点名称 | xx的主页 |
+| VITE_SITE_AUTHOR | 作者名 | xx |
+| VITE_SITE_URL | 站点域名 | example.com |
 | VITE_SITE_LOGO | 站点图标路径 | /images/icon/favicon.ico |
 | VITE_SITE_MAIN_LOGO | 主页 Logo 图片 | /images/icon/logo.png |
-| VITE_SITE_START | 建站日期 | 2024 |
-| VITE_SITE_ICP | ICP 备案号（可选） | 苏ICP备xxxxx号 |
-| VITE_SONG_API | 音乐 API 地址 | https://163api.mmcoo.de/api |
+| VITE_SITE_START | 建站日期 | 20XX |
+| VITE_SITE_ICP | ICP 备案号（可选） | xICP备xxxxx号 |
+| VITE_SONG_API | 音乐 API 地址 | https://example.com/api |
 | VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
 | VITE_SONG_TYPE | 播放类型 | playlist |
-| VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | 2065854146 |
+| VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
 
 ### 自定义链接
 
@@ -138,10 +137,6 @@ src/
 ├── utils/          # 工具函数
 └── views/          # 页面视图
 ```
-
-## 致谢
-
-本项目基于 [imsyy/home](https://github.com/imsyy/home) 二次开发。
 
 ## 许可证
 
