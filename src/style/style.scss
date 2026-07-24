@@ -118,16 +118,24 @@ a:hover {
 .el-message {
   --el-message-bg-color: #00000040 !important;
   --el-message-text-color: #efefef !important;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
   border-radius: 25px !important;
   border-color: transparent !important;
+  background-color: #00000040 !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 16px !important;
 
   .el-message__badge {
-    display: none;
+    display: none !important;
   }
   .el-message__content {
     white-space: nowrap;
+    color: #efefef !important;
+  }
+  .el-message__icon {
+    color: #efefef !important;
   }
 }
 

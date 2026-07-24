@@ -1,4 +1,5 @@
 import { ElMessage } from "element-plus";
+import "element-plus/es/components/message/style/css";
 
 /**
  * 消息弹窗工具函数
