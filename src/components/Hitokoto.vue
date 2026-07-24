@@ -18,6 +18,7 @@
 import { Error } from "@icon-park/vue-next";
 import { getHitokoto } from "@/api";
 import { mainStore } from "@/store";
+import { showMessage } from "@/utils/message.js";
 import debounce from "@/utils/debounce.js";
 
 const store = mainStore();
@@ -35,7 +36,7 @@ const getHitokotoData = async () => {
     hitokotoData.text = result.hitokoto;
     hitokotoData.from = result.from;
   } catch (error) {
-    ElMessage({
+    showMessage({
       message: "一言获取失败",
       icon: h(Error, {
         theme: "filled",

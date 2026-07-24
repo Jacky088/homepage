@@ -52,6 +52,7 @@
 <script setup>
 import { mainStore } from "@/store";
 import { Error } from "@icon-park/vue-next";
+import { showMessage } from "@/utils/message.js";
 
 const store = mainStore();
 const bgUrl = ref(null);
@@ -119,7 +120,7 @@ const onVideoWaiting = () => {
 // 视频加载错误
 const onVideoError = () => {
   console.error("视频加载失败");
-  ElMessage({
+  showMessage({
     message: "视频背景加载失败，已切换至默认壁纸",
     type: "warning",
     duration: 3000,
@@ -142,7 +143,7 @@ const changeBg = async (type) => {
     const exists = await checkVideoExists();
     if (!exists) {
       console.warn("检测到默认视频文件为空或不存在，自动切换至壁纸显示");
-      ElMessage({
+      showMessage({
         message: "未检测到本地视频，已自动切换至默认壁纸",
         type: "warning",
         duration: 3000,
@@ -180,7 +181,7 @@ const imgAnimationEnd = () => {
 // 图片显示失败
 const imgLoadError = () => {
   console.error("壁纸加载失败：", bgUrl.value);
-  ElMessage({
+  showMessage({
     message: "壁纸加载失败，已临时切换回默认",
     icon: h(Error, {
       theme: "filled",

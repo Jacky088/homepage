@@ -46,7 +46,7 @@
 import { reactive, onMounted, onBeforeUnmount, h, ref, watch, nextTick } from "vue";
 import { getAdcode, getWeather, getOtherWeather, getAdcodeByCity } from "@/api";
 import { Error } from "@icon-park/vue-next";
-import { ElMessage } from "element-plus";
+import { showMessage } from "@/utils/message.js";
 import { mainStore } from "@/store";
 
 const store = mainStore();
@@ -211,7 +211,7 @@ const weatherData = reactive({
 });
 
 const onError = (message) => {
-  ElMessage({
+  showMessage({
     message,
     icon: h(Error, {
       theme: "filled",
@@ -300,14 +300,14 @@ const getWeatherData = async (cityName) => {
 const saveCity = async () => {
   const trimmedCity = inputCity.value.trim();
   if (!trimmedCity) {
-    ElMessage.warning("城市名称不能为空");
+    showMessage.warning("城市名称不能为空");
     return;
   }
   
   // 临时保存原城市，以防请求失败后需要回滚
   const oldCity = getCookie("weather_city") || "上海";
   
-  ElMessage.info("正在查询并保存天气信息...");
+  showMessage.info("正在查询并保存天气信息...");
   await getWeatherData(trimmedCity);
   
   // 检查是否获取成功
@@ -319,12 +319,12 @@ const saveCity = async () => {
   )) {
     // 成功，保存至 cookie，过期时间 30 天
     setCookie("weather_city", successCityName, 30);
-    ElMessage.success(`城市成功切换为：${successCityName}`);
+    showMessage.success(`城市成功切换为：${successCityName}`);
     store.weatherOpenState = false; // 返回时间卡片显示
   } else {
     // 失败，回滚
     await getWeatherData(oldCity);
-    ElMessage.error("获取该城市天气失败，已回退");
+    showMessage.error("获取该城市天气失败，已回退");
   }
 };
 

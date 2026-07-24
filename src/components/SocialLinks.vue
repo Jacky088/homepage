@@ -66,6 +66,7 @@
 
 <script setup>
 import { mainStore } from "@/store";
+import { showMessage } from "@/utils/message.js";
 import socialLinks from "@/assets/socialLinks.json";
 
 const store = mainStore();
@@ -76,7 +77,7 @@ const socialTip = ref("通过这里联系我");
 // 点击音乐按钮
 const handleMusicClick = () => {
   if (store.musicIsOk === false) {
-    ElMessage({
+    showMessage({
       message: "音乐播放器初始化失败！",
       grouping: true,
     });
@@ -89,13 +90,13 @@ const handleMusicClick = () => {
 const toggleBackground = () => {
   if (store.coverType === "4") {
     store.coverType = "0";
-    ElMessage({
+    showMessage({
       message: "已切换为图片壁纸",
       type: "success",
     });
   } else {
     store.coverType = "4";
-    ElMessage({
+    showMessage({
       message: "已切换为视频背景",
       type: "success",
     });

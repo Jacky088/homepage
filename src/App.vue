@@ -41,6 +41,7 @@ import { helloInit, checkDays } from "@/utils/getTime.js";
 import { HamburgerButton, CloseSmall } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
 import { Icon } from "@vicons/utils";
+import { showMessage } from "@/utils/message.js";
 import Loading from "@/components/Loading.vue";
 import MainLeft from "@/views/Main/Left.vue";
 import MainRight from "@/views/Main/Right.vue";
@@ -86,7 +87,7 @@ onMounted(() => {
 
   // 屏蔽右键
   document.oncontextmenu = () => {
-    ElMessage({
+    showMessage({
       message: "为了浏览体验，本站禁用右键",
       grouping: true,
       duration: 2000,
@@ -98,7 +99,7 @@ onMounted(() => {
   window.addEventListener("mousedown", (event) => {
     if (event.button == 1) {
       store.backgroundShow = !store.backgroundShow;
-      ElMessage({
+      showMessage({
         message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
         grouping: true,
       });

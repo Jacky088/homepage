@@ -90,6 +90,7 @@
 <script setup>
 import { CheckSmall, CloseSmall, SuccessPicture } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
+import { showMessage } from "@/utils/message.js";
 import { storeToRefs } from "pinia";
 
 const store = mainStore();
@@ -109,7 +110,7 @@ const activeName = ref("1");
 
 // 壁纸切换
 const radioChange = () => {
-  ElMessage({
+  showMessage({
     message: "壁纸更换成功",
     icon: h(SuccessPicture, {
       theme: "filled",

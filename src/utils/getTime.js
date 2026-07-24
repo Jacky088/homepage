@@ -1,5 +1,6 @@
 import { h } from "vue";
 import { SpaCandle } from "@icon-park/vue-next";
+import { showMessage } from "@/utils/message.js";
 import dayjs from "dayjs";
 
 // 时钟
@@ -89,7 +90,7 @@ export const helloInit = () => {
   } else {
     hello = "夜深了";
   }
-  ElMessage({
+  showMessage({
     dangerouslyUseHTMLString: true,
     message: `<strong>${hello}</strong> 欢迎来到我的主页`,
   });
@@ -112,7 +113,7 @@ export const checkDays = () => {
     const gray = document.createElement("style");
     gray.innerHTML = "html{filter: grayscale(100%)}";
     document.head.appendChild(gray);
-    ElMessage({
+    showMessage({
       message: `今天是${anniversaries[key]}`,
       duration: 14000,
       icon: h(SpaCandle, { theme: "filled", fill: "#efefef" }),

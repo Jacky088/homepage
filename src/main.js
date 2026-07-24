@@ -6,6 +6,7 @@ import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 // swiper
 import "swiper/css";
+import { showMessage } from "@/utils/message.js";
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -18,6 +19,6 @@ app.mount("#app");
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     // 弹出更新提醒
-    ElMessage("站点已更新，刷新后生效");
+    showMessage("站点已更新，刷新后生效");
   });
 }

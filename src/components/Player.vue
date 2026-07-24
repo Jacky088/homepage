@@ -24,6 +24,7 @@
 import { MusicOne, PlayWrong } from "@icon-park/vue-next";
 import { getPlayerList } from "@/api";
 import { mainStore } from "@/store";
+import { showMessage } from "@/utils/message.js";
 import APlayer from "@worstone/vue-aplayer";
 
 const store = mainStore();
@@ -101,7 +102,7 @@ onMounted(() => {
       .catch((err) => {
         console.error("播放器加载失败:", err);
         store.musicIsOk = false;
-        ElMessage({
+        showMessage({
           message: "播放器加载失败，请检查网络或 API 配置",
           grouping: true,
           icon: h(PlayWrong, {
@@ -120,7 +121,7 @@ const onPlay = () => {
   store.setPlayerState(player.value.audioRef.paused);
   // 储存播放器信息
   store.setPlayerData(playList.value[playIndex.value].name, playList.value[playIndex.value].artist);
-  ElMessage({
+  showMessage({
     message: store.getPlayerData.name + " - " + store.getPlayerData.artist,
     grouping: true,
     icon: h(MusicOne, {
@@ -182,7 +183,7 @@ const loadMusicError = () => {
   } else {
     notice = "播放歌曲出现错误";
   }
-  ElMessage({
+  showMessage({
     message: notice,
     grouping: true,
     icon: h(PlayWrong, {
