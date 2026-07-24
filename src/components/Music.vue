@@ -586,7 +586,7 @@ watch(
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  width: 380px;
+  width: 640px;
   max-width: 88vw;
   height: 600px;
   max-height: 80vh;
