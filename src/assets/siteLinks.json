@@ -1,44 +1,19 @@
 [
   {
     "icon": "Blog",
-    "name": "博客Blog",
+    "name": "博客站",
     "link": "https://blog.huzz.cn/"
-  },
-     {
-    "icon": "Terminal",
-    "name": "倒计时",
-    "link": "https://time.huzz.cn/"
-  },
-     {
-    "icon": "Staylinked",
-    "name": "订阅提醒",
-    "link": "https://notice.mmcoo.de/"
   },
      {
     "icon": "Compass",
     "name": "网站导航",
     "link": "https://nav.huzz.cn/"
   },
-     {
-    "icon": "AddressCard",
-    "name": "地址生成",
-    "link": "https://dizhi.mmcoo.de/"
-  },
-       {
-    "icon": "Toolbox",
-    "name": "IT工具箱",
-    "link": "https://tools.mmcoo.de/"
-  },
    {
     "icon": "LaptopCode",
-    "name": "网站状态",
-    "link": "https://status.mmcoo.de/"
+    "name": "站点状态",
+    "link": "https://stats.uptimerobot.com/skGUWMvSLy/"
   },
-      {
-    "icon": "Image",
-    "name": "16图床",
-    "link": "https://111666.best/"
-  }, 
      {
     "icon": "Github",
     "name": "Github加速",
