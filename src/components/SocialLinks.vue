@@ -51,7 +51,7 @@
       <a
         style="cursor: pointer"
         @click="handleMusicClick"
-        @mouseenter="socialTip = '来电音乐听听？'"
+        @mouseenter="socialTip = '来点music听听？'"
         @mouseleave="socialTip = '通过这里联系我'"
       >
         <svg class="icon" viewBox="0 0 24 24" width="24" height="24">
