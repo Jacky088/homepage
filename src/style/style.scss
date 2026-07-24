@@ -126,12 +126,15 @@ a:hover {
   border: none !important;
   box-shadow: none !important;
   padding: 8px 16px !important;
+  max-width: calc(100vw - 40px) !important;
 
   .el-message__badge {
     display: none !important;
   }
   .el-message__content {
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     color: #efefef !important;
   }
   .el-message__icon {
