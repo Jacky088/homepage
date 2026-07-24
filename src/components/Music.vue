@@ -47,15 +47,6 @@
                 <go-end theme="filled" size="30" fill="#ffffffcc" />
               </div>
             </div>
-            <!-- 音量控制 -->
-            <div class="volume-bar">
-              <div class="vol-icon">
-                <volume-mute theme="filled" size="16" fill="#ffffff99" v-if="volumeNum == 0" />
-                <volume-small theme="filled" size="16" fill="#ffffff99" v-else-if="volumeNum < 0.7" />
-                <volume-notice theme="filled" size="16" fill="#ffffff99" v-else />
-              </div>
-              <el-slider v-model="volumeNum" :show-tooltip="false" :min="0" :max="1" :step="0.01" />
-            </div>
             <!-- 底部按钮 -->
             <div class="panel-footer">
               <span class="footer-btn" @click="openMusicList()">打开列表</span>
@@ -92,9 +83,6 @@ import {
   Pause,
   GoEnd,
   CloseOne,
-  VolumeMute,
-  VolumeSmall,
-  VolumeNotice,
 } from "@icon-park/vue-next";
 import Player from "@/components/Player.vue";
 import { mainStore } from "@/store";
@@ -422,48 +410,6 @@ watch(
     }
   }
 
-  .volume-bar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 8px;
-
-    .vol-icon {
-      display: flex;
-      align-items: center;
-      .i-icon {
-        display: flex;
-        width: 16px;
-        height: 16px;
-      }
-    }
-
-    :deep(.el-slider) {
-      --el-slider-main-bg-color: #ffffffcc;
-      --el-slider-runway-bg-color: #ffffff26;
-      --el-slider-button-size: 12px;
-      height: 20px;
-    }
-    :deep(.el-slider__runway) {
-      height: 3px;
-      border-radius: 3px;
-    }
-    :deep(.el-slider__bar) {
-      height: 3px;
-      border-radius: 3px;
-    }
-    :deep(.el-slider__button-wrapper) {
-      top: -14px;
-    }
-    :deep(.el-slider__button) {
-      width: 12px;
-      height: 12px;
-      border: 2px solid #fff;
-      background: #fff;
-    }
-  }
-
   .panel-footer {
     .footer-btn {
       font-size: 0.85rem;
@@ -640,21 +586,25 @@ watch(
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  width: 640px;
+  width: 380px;
+  max-width: 88vw;
   height: 600px;
+  max-height: 80vh;
   padding: 20px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(40px) saturate(1.4);
   -webkit-backdrop-filter: blur(40px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
+  border-radius: 28px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   overflow: hidden;
 
-  @media (max-width: 720px) {
-    width: 90%;
+  @media (max-width: 480px) {
+    width: 92vw;
+    max-width: 92vw;
     height: 70vh;
     max-height: 500px;
+    border-radius: 22px;
   }
 
   .list-close {
