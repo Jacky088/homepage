@@ -522,8 +522,8 @@ watch(
 
   // 移动端自适应
   @media (max-width: 480px) {
-    width: 92vw;
-    max-width: 92vw;
+    width: 78vw;
+    max-width: 78vw;
     padding: 28px 20px 20px;
     gap: 14px;
     border-radius: 22px;
@@ -627,8 +627,8 @@ watch(
   overflow: hidden;
 
   @media (max-width: 480px) {
-    width: 92vw;
-    max-width: 92vw;
+    width: 78vw;
+    max-width: 78vw;
     height: 70vh;
     max-height: 500px;
     border-radius: 22px;
