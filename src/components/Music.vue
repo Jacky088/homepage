@@ -672,8 +672,8 @@ watch(
 
     ol,
     ol[style] {
-      max-height: 480px !important;
-      height: 480px !important;
+      max-height: 520px !important;
+      height: 520px !important;
       overflow-y: auto !important;
       display: block !important;
     }
@@ -703,7 +703,10 @@ watch(
   // 列表项
   .aplayer .aplayer-list ol li {
     position: relative;
-    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 8px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     transition: background 0.2s ease;
   }
@@ -725,7 +728,7 @@ watch(
     top: 50%;
     transform: translateY(-50%);
     width: 3px;
-    height: 22px; // 固定高度，确保所有选中项竖条一致
+    height: 28px; // 加长，确保所有选中项竖条明显且一致
     background: rgba(255, 255, 255, 0.85);
     border-radius: 0 2px 2px 0;
   }
