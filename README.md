@@ -55,7 +55,12 @@ pnpm build
 
 ## 配置说明
 
-复制 `.env.example` 为 `.env`，按需修改配置项：
+项目通过 `VITE_` 开头的环境变量进行配置，**两种方式任选其一**（两者效果一致，构建时均被 Vite 注入到前端）：
+
+- **方式一：`.env` 文件（适合本地开发）**：复制 `.env.example` 为 `.env`，按需修改配置项。`.env` 已加入 `.gitignore`，不会提交到仓库。
+- **方式二：云平台环境变量（适合线上部署）**：在 Vercel / EdgeOne 等平台的控制台添加同名环境变量（**值不要带引号**），效果与 `.env` 文件完全一致，配置后需**重新部署**生效。
+
+> **优先级提示**：若同一个变量在 `.env` 文件和云平台控制台**都配置了值**，以 **云平台环境变量** 为准。
 
 | 变量名 | 说明 | 示例 |
 | --- | --- | --- |
@@ -70,6 +75,7 @@ pnpm build
 | VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
 | VITE_SONG_TYPE | 播放类型 | playlist |
 | VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
+| VITE_WEATHER_KEY | 高德 Web 服务 Key（留空则用 IP 定位） | xxxxxxxx |
 
 ### 自定义链接
 
@@ -92,6 +98,25 @@ pnpm build
 - QQ 音乐歌单建议不超过 50 首
 - 如果 API 不通或网络异常，播放器会自动提示初始化失败并禁用入口
 - 备用 API：`https://api.wuenci.com/meting/api/`
+
+### 天气显示
+
+顶栏右上角会展示当前城市及天气状况（图标 + 城市 + 天气 + 温度），点击可展开查看天气详情（风向、风力）。天气文字过长时，胶囊会以跑马灯形式滚动展示，并自动限制最大宽度。
+
+**定位逻辑（双路线）：**
+
+| 条件 | 定位方式 | 天气来源 |
+| --- | --- | --- |
+| 配置了 `VITE_WEATHER_KEY`（高德 key） | 高德 IP 定位 | 高德天气接口 |
+| `VITE_WEATHER_KEY` 为空（默认） | ipinfo.io / ipapi.co IP 定位 | wttr.in 备用接口 |
+
+**配置方式：**
+1. **推荐（国内稳定）**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key**（免费，每日上限 5000 次），填入 `VITE_WEATHER_KEY`。可通过 `.env` 文件或云平台控制台环境变量配置。
+2. **免配置**：`VITE_WEATHER_KEY` 留空即可，自动使用 ipinfo.io / ipapi.co 定位 + wttr.in 获取天气，无需申请任何 Key。
+
+**说明：**
+- 天气定位精度为**城市级**（按 IP 自动识别当前所在城市）。
+- 若 `VITE_WEATHER_KEY` 留空时依赖 ipinfo.io / ipapi.co / wttr.in 外网服务，国内网络环境可能访问受限，建议配置高德 Key 以保证稳定。
 
 ## 部署
 

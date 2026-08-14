@@ -294,11 +294,11 @@ watch(
   max-width: 88vw;
   padding: 36px 32px 26px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(40px) saturate(1.4);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgb(0 0 0 / 45%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 12%);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -591,12 +591,12 @@ watch(
   height: 600px;
   max-height: 80vh;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(40px) saturate(1.4);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgb(0 0 0 / 45%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 28px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 0.08);
   overflow: hidden;
 
   @media (max-width: 480px) {

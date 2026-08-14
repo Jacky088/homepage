@@ -43,7 +43,6 @@
             <span class="value">{{ weather.windpower ? weather.windpower + " 级" : "未知" }}</span>
           </div>
         </div>
-        <div class="panel-note">位置由 IP 自动识别，仅显示城市级天气</div>
       </div>
     </Transition>
   </Teleport>
@@ -113,36 +112,65 @@ const amapWeatherZh = (weather) => {
   return map[weather] || weather;
 };
 
-// wttr.in 天气描述英文转中文
+// wttr.in 天气描述英文转中文（基于 WorldWeatherOnline 天气代码表）
 const wttrWeatherZh = (text) => {
   if (!text) return "";
   const map = {
     Sunny: "晴",
     Clear: "晴",
-    "Partly cloudy": "多云",
-    "Partly Cloudy": "多云",
-    Cloudy: "阴",
-    Overcast: "阴天",
+    "Partly Cloudy": "局部多云",
+    Cloudy: "多云",
+    Overcast: "阴",
     Mist: "薄雾",
+    "Patchy rain nearby": "附近有零星降雨",
+    "Patchy snow nearby": "附近有零星降雪",
+    "Patchy sleet nearby": "附近有零星雨夹雪",
+    "Patchy freezing drizzle nearby": "附近有零星冻毛毛雨",
+    "Thundery outbreaks in nearby": "附近有雷暴",
+    "Blowing snow": "吹雪",
+    Blizzard: "暴风雪",
     Fog: "雾",
     "Freezing fog": "冻雾",
-    Haze: "霾",
+    "Patchy light drizzle": "零星小毛毛雨",
+    "Light drizzle": "小毛毛雨",
+    "Freezing drizzle": "冻毛毛雨",
+    "Heavy freezing drizzle": "强冻毛毛雨",
+    "Patchy light rain": "零星小雨",
     "Light rain": "小雨",
-    "Light Rain": "小雨",
+    "Moderate rain at times": "时有中雨",
     "Moderate rain": "中雨",
+    "Heavy rain at times": "时有大雨",
     "Heavy rain": "大雨",
-    "Heavy Rain": "大雨",
-    "Light snow": "小雪",
-    "Moderate snow": "中雪",
-    "Heavy snow": "大雪",
-    "Light sleet": "雨夹雪",
+    "Light freezing rain": "小冻雨",
+    "Moderate or heavy freezing rain": "中到大冻雨",
+    "Light sleet": "小雨夹雪",
     "Moderate or heavy sleet": "中到大雨夹雪",
-    "Patchy rain nearby": "局部有雨",
-    "Light drizzle": "细雨",
-    "Thundery outbreaks possible": "可能有雷雨",
+    "Patchy light snow": "零星小雪",
+    "Light snow": "小雪",
+    "Patchy moderate snow": "零星中雪",
+    "Moderate snow": "中雪",
+    "Patchy heavy snow": "零星大雪",
+    "Heavy snow": "大雪",
+    "Ice pellets": "冰粒",
+    "Light rain shower": "小阵雨",
+    "Moderate or heavy rain shower": "中到大阵雨",
+    "Torrential rain shower": "特大阵雨",
+    "Light sleet showers": "小阵雨夹雪",
+    "Moderate or heavy sleet showers": "中到大阵雨夹雪",
+    "Light snow showers": "小阵雪",
+    "Moderate or heavy snow showers": "中到大阵雪",
+    "Light showers of ice pellets": "小阵冰粒",
+    "Moderate or heavy showers of ice pellets": "中到大阵冰粒",
+    "Patchy light rain in area with thunder": "附近有零星雷雨",
+    "Moderate or heavy rain in area with thunder": "附近有中到大雷雨",
+    "Patchy light snow in area with thunder": "附近有零星雷雪",
+    "Moderate or heavy snow in area with thunder": "附近有中到大雷雪",
+    Haze: "霾",
+    "Smoky haze": "烟雾",
   };
   const key = text.trim();
   if (map[key]) return map[key];
+  // 大小写不敏感匹配（wttr.in 不同地区可能返回不同大小写）
   for (const k in map) {
     if (key.toLowerCase() === k.toLowerCase()) return map[k];
   }
@@ -402,11 +430,6 @@ onBeforeUnmount(() => {
         opacity: 0.6;
       }
     }
-  }
-  .panel-note {
-    margin-top: 10px;
-    font-size: 0.7rem;
-    opacity: 0.45;
   }
 
   @media (max-width: 720px) {

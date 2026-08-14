@@ -109,6 +109,7 @@ const toggleBackground = () => {
   display: flex;
   align-items: center;
   height: 42px;
+  padding: 0 14px;
   background-color: transparent;
   border-radius: 12px;
   backdrop-filter: blur(0);
