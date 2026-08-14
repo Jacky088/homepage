@@ -16,6 +16,8 @@
           <MoreSet />
         </section>
       </div>
+      <!-- 顶栏天气徽章 -->
+      <WeatherBadge v-show="!store.backgroundShow && !store.setOpenState" />
       <!-- 移动端菜单按钮 -->
       <Transition name="fade">
         <Icon
@@ -50,6 +52,7 @@ import Footer from "@/components/Footer.vue";
 import SocialLinks from "@/components/SocialLinks.vue";
 import Box from "@/views/Box/index.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
+import WeatherBadge from "@/components/WeatherBadge.vue";
 import cursorInit from "@/utils/cursor.js";
 import config from "@/../package.json";
 

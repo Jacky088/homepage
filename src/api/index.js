@@ -113,3 +113,105 @@ export const getOtherWeather = async (city = "Shanghai") => {
   if (!res.ok) throw new Error("备用天气接口请求失败");
   return await res.json();
 };
+
+/**
+ * 将城市英文/拼音名转为中文（用于界面展示）
+ */
+const zhCityName = (name) => {
+  if (!name) return "";
+  const map = {
+    beijing: "北京",
+    shanghai: "上海",
+    guangzhou: "广州",
+    shenzhen: "深圳",
+    chengdu: "成都",
+    hangzhou: "杭州",
+    wuhan: "武汉",
+    nanjing: "南京",
+    suzhou: "苏州",
+    tianjin: "天津",
+    chongqing: "重庆",
+    xian: "西安",
+    qingdao: "青岛",
+    shenyang: "沈阳",
+    dalian: "大连",
+    zhengzhou: "郑州",
+    changsha: "长沙",
+    xiamen: "厦门",
+    fuzhou: "福州",
+    kunming: "昆明",
+    nanning: "南宁",
+    haerbin: "哈尔滨",
+    changchun: "长春",
+    jinan: "济南",
+    taiyuan: "太原",
+    hefei: "合肥",
+    nanchang: "南昌",
+    guiyang: "贵阳",
+    lanzhou: "兰州",
+    yinchuan: "银川",
+    huhehaote: "呼和浩特",
+    urumqi: "乌鲁木齐",
+    lasa: "拉萨",
+    xining: "西宁",
+    shijiazhuang: "石家庄",
+    hongkong: "香港",
+    "hong kong": "香港",
+    kowloon: "九龙",
+    "tsuen wan": "荃湾",
+    "tseung kwan o": "将军澳",
+    "sha tin": "沙田",
+    "tuen mun": "屯门",
+    "yuen long": "元朗",
+    "tai po": "大埔",
+    "sham shui po": "深水埗",
+    macau: "澳门",
+    taipei: "台北",
+    "new taipei": "新北",
+    taichung: "台中",
+    kaohsiung: "高雄",
+    tainan: "台南",
+    taoyuan: "桃园",
+  };
+  return map[name.trim().toLowerCase()] || name;
+};
+
+/**
+ * 根据 IP 定位城市（免费接口，无需 key，均支持浏览器 CORS）
+ * 多个服务按顺序降级，提高可用性
+ * @returns {Promise<{en: string, zh: string}>} en 用于查询 wttr.in，zh 用于界面展示
+ */
+export const getCityByIp = async () => {
+  const services = [
+    async () => {
+      const res = await fetch("https://ipinfo.io/json", { cache: "no-cache" });
+      if (!res.ok) throw new Error("ipinfo.io 请求失败");
+      const data = await res.json();
+      if (!data.city) throw new Error("ipinfo.io 定位失败");
+      return data.city;
+    },
+    async () => {
+      const res = await fetch("https://ipapi.co/json/", { cache: "no-cache" });
+      if (!res.ok) throw new Error("ipapi.co 请求失败");
+      const data = await res.json();
+      if (!data.city) throw new Error("ipapi.co 定位失败");
+      return data.city;
+    },
+  ];
+
+  let lastError = null;
+  for (const service of services) {
+    try {
+      const enCity = await service();
+      if (enCity) {
+        return {
+          en: enCity.trim(),
+          zh: zhCityName(enCity),
+        };
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("IP 定位失败");
+};
