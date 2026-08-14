@@ -254,6 +254,42 @@ onMounted(() => {
   window.$openList = openMusicList;
   // 启动进度同步
   startProgressSync();
+
+  // 音乐列表滚动回弹效果：滚到顶/底时短暂位移再弹回
+  const musicListBox = document.querySelector(".music-list-box");
+  if (musicListBox) {
+    let rubberBandTimer = null;
+    musicListBox.addEventListener(
+      "wheel",
+      (e) => {
+        const ol = musicListBox.querySelector(".aplayer-list ol");
+        if (!ol) return;
+        // 已经在滚动区域内
+        const isAtTop = ol.scrollTop <= 0;
+        const isAtBottom = ol.scrollTop + ol.clientHeight >= ol.scrollHeight - 1;
+        // 在顶部还想继续下滚 / 在底部还想继续上滚 → 触发回弹
+        if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+          const isTopBounce = isAtTop;
+          ol.style.transition = "transform 0.18s ease-out";
+          ol.style.transform = isTopBounce
+            ? `translateY(${-Math.min(Math.abs(e.deltaY) * 0.25, 12)}px)`
+            : `translateY(${Math.min(e.deltaY * 0.25, 12)}px)`;
+          // 清除之前的计时器
+          if (rubberBandTimer) clearTimeout(rubberBandTimer);
+          // 150ms 后回弹
+          rubberBandTimer = setTimeout(() => {
+            ol.style.transition = "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)";
+            ol.style.transform = "translateY(0)";
+            // 动画结束后清除 transition 避免影响其他样式
+            setTimeout(() => {
+              ol.style.transition = "";
+            }, 320);
+          }, 150);
+        }
+      },
+      { passive: true },
+    );
+  }
 });
 
 onBeforeUnmount(() => {
@@ -680,19 +716,31 @@ watch(
   }
 
   // ---------- APlayer 列表细节优化 ----------
-  // 自定义细圆角滚动条
+  // 自定义细圆角滚动条（始终可见，不随滚动自动消失）
   .aplayer .aplayer-list ol::-webkit-scrollbar {
     width: 5px;
+    -webkit-appearance: none;
   }
   .aplayer .aplayer-list ol::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .aplayer .aplayer-list ol::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 3px;
   }
+  .aplayer .aplayer-list ol::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    min-height: 30px; // 保证滑块始终有可见高度
+  }
   .aplayer .aplayer-list ol::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.4);
+  }
+  // Firefox 滚动条
+  .aplayer .aplayer-list ol {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) rgba(255, 255, 255, 0.05);
+    // 阻止滚动穿透到外层页面
+    overscroll-behavior-y: contain;
+    // 滚动更顺滑
+    scroll-behavior: smooth;
   }
 
   // 隐藏 APlayer 列表默认标题头（若有）
