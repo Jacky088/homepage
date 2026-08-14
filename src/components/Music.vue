@@ -329,24 +329,48 @@ watch(
   }
 
   .disc {
-    width: 80px;
-    height: 80px;
+    position: relative;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 100%);
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    background:
+      repeating-radial-gradient(circle at center, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 2px, transparent 2px, transparent 5px),
+      linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 32px rgba(255, 255, 255, 0.2), 0 8px 28px rgba(0, 0, 0, 0.5);
+    }
 
     &.spinning {
-      animation: disc-spin 4s linear infinite;
+      animation: disc-spin 6s linear infinite;
+    }
+
+    // 唱片刻度虚线轨道
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(rgba(255,255,255,0.1) 0deg 2deg, transparent 2deg 8deg);
+      pointer-events: none;
+      opacity: 0.6;
     }
 
     .disc-inner {
+      position: relative;
+      z-index: 1;
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -505,8 +529,11 @@ watch(
     border-radius: 22px;
 
     .disc {
-      width: 64px;
-      height: 64px;
+      width: 76px;
+      height: 76px;
+      &::after {
+        inset: 6px;
+      }
       .disc-inner {
         width: 40px;
         height: 40px;
@@ -650,6 +677,70 @@ watch(
       overflow-y: auto !important;
       display: block !important;
     }
+  }
+
+  // ---------- APlayer 列表细节优化 ----------
+  // 自定义细圆角滚动条
+  .aplayer .aplayer-list ol::-webkit-scrollbar {
+    width: 5px;
+  }
+  .aplayer .aplayer-list ol::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .aplayer .aplayer-list ol::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+  .aplayer .aplayer-list ol::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  // 隐藏 APlayer 列表默认标题头（若有）
+  .aplayer .aplayer-list .aplayer-list-head {
+    display: none;
+  }
+
+  // 列表项
+  .aplayer .aplayer-list ol li {
+    position: relative;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.2s ease;
+  }
+
+  // 列表项 hover
+  .aplayer .aplayer-list ol li:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  // 当前播放项：左侧竖条 + 渐变背景
+  .aplayer .aplayer-list ol li.aplayer-list-light {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%);
+    border-left: 3px solid rgba(255, 255, 255, 0.85);
+  }
+
+  // 序号弱化
+  .aplayer .aplayer-list ol li .aplayer-list-index {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.85rem;
+    margin-right: 10px;
+  }
+  .aplayer .aplayer-list ol li.aplayer-list-light .aplayer-list-index {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  // 标题与作者
+  .aplayer .aplayer-list ol li .aplayer-list-title {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+  }
+  .aplayer .aplayer-list ol li .aplayer-list-author {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+    margin-left: 10px;
+  }
+  .aplayer .aplayer-list ol li.aplayer-list-light .aplayer-list-title {
+    color: #fff;
   }
 }
 </style>
