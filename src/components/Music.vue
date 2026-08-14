@@ -715,8 +715,19 @@ watch(
 
   // 当前播放项：左侧竖条 + 渐变背景
   .aplayer .aplayer-list ol li.aplayer-list-light {
+    position: relative;
     background: linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%);
-    border-left: 3px solid rgba(255, 255, 255, 0.85);
+  }
+  .aplayer .aplayer-list ol li.aplayer-list-light::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px; // 固定高度，确保所有选中项竖条一致
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 0 2px 2px 0;
   }
 
   // 序号弱化
