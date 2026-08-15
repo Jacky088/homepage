@@ -47,6 +47,7 @@ import { reactive, onMounted, onBeforeUnmount, h, ref, watch, nextTick } from "v
 import { getAdcode, getWeather, getOtherWeather, getAdcodeByCity } from "@/api";
 import { Error } from "@icon-park/vue-next";
 import { showMessage } from "@/utils/message.js";
+import { windDirZh } from "@/utils/weather.js";
 import { mainStore } from "@/store";
 
 const store = mainStore();
@@ -248,7 +249,7 @@ const getWeatherData = async (cityName) => {
       weatherData.weather.temperature = cond.temp_C || "0";
 
       // 风向与风力
-      weatherData.weather.winddirection = cond.winddir16Point || "未知";
+      weatherData.weather.winddirection = windDirZh(cond.winddir16Point) || "未知";
       weatherData.weather.windpower = cond.windspeedKmph ? `${Math.round(Number(cond.windspeedKmph) / 5)}` : "0";
     } else {
       // 高德接口请求流程

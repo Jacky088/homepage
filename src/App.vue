@@ -23,7 +23,7 @@
         <Icon
           class="menu"
           size="24"
-          v-show="!store.backgroundShow && !store.mobileOpenState"
+          v-show="!store.backgroundShow && store.navCollapsed && !store.mobileOpenState"
           @click="store.mobileOpenState = !store.mobileOpenState"
         >
           <component :is="HamburgerButton" />
@@ -227,9 +227,6 @@ onBeforeUnmount(() => {
     }
     .i-icon {
       transform: translateY(2px);
-    }
-    @media (min-width: 721px) {
-      display: none;
     }
   }
   @media (max-height: 720px) {

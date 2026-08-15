@@ -1,5 +1,9 @@
 <template>
-  <div v-if="siteLinks[0]" :class="['links', { 'mobile-open': store.mobileOpenState }]">
+  <div
+    v-if="siteLinks[0]"
+    ref="linksRef"
+    :class="['links', { 'nav-collapsed': store.navCollapsed }]"
+  >
     <!-- PC: 横排文字链接 -->
     <a
       v-for="item in siteLinks"
@@ -14,7 +18,7 @@
   <!-- 移动端: 底部抽屉面板 -->
   <Teleport to="body">
     <Transition name="drawer">
-      <div v-show="store.mobileOpenState" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
+      <div v-show="store.navCollapsed && store.mobileOpenState" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
         <div class="mobile-drawer" @click.stop>
           <div class="drawer-header">
             <span class="drawer-title">网站列表</span>
@@ -49,8 +53,10 @@ import { CloseOne } from "@icon-park/vue-next";
 import { Blog, Terminal, Cloud, Compass, Book, Fire, LaptopCode, StickyNote, Staylinked, AddressCard, Toolbox, Github, Image, Info } from "@vicons/fa";
 import { mainStore } from "@/store";
 import siteLinks from "@/assets/siteLinks.json";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 
 const store = mainStore();
+const linksRef = ref(null);
 
 // 网站链接图标
 const siteIcon = {
@@ -87,6 +93,36 @@ const jumpLink = (data) => {
     }
   }
 };
+
+// 测量横排导航是否放得下所有网站标题
+const checkNavFit = () => {
+  if (!linksRef.value) return;
+  const container = linksRef.value;
+  const items = container.querySelectorAll(".link-item");
+  if (!items.length) return;
+  // 若当前因折叠而隐藏（display:none），临时用内联样式覆盖以测得真实宽度
+  const wasHidden = getComputedStyle(container).display === "none";
+  if (wasHidden) container.style.display = "flex";
+  const containerWidth = container.clientWidth;
+  const gap = parseFloat(getComputedStyle(container).gap) || 0;
+  let total = 0;
+  items.forEach((el, i) => {
+    total += el.offsetWidth;
+    if (i < items.length - 1) total += gap;
+  });
+  // 还原：移除内联样式，交给 nav-collapsed 类继续控制显隐
+  if (wasHidden) container.style.display = "";
+  store.setNavCollapsed(total > containerWidth);
+};
+
+onMounted(() => {
+  checkNavFit();
+  window.addEventListener("resize", checkNavFit);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkNavFit);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -148,13 +184,10 @@ const jumpLink = (data) => {
 
   @media (max-width: 1100px) {
     gap: 20px;
-    .link-item {
-      font-size: 0.95rem;
-    }
   }
 
-  // 移动端隐藏 PC 版横排
-  @media (max-width: 720px) {
+  // 横排放不下时（由 JS 判定 navCollapsed）隐藏 PC 横排
+  &.nav-collapsed {
     display: none;
   }
 }
@@ -171,10 +204,6 @@ const jumpLink = (data) => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-
-  @media (min-width: 721px) {
-    display: none;
-  }
 
   .mobile-drawer {
     width: 100%;

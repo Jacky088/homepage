@@ -1,5 +1,5 @@
 <template>
-  <div class="weather-badge" @click="togglePanel">
+  <div class="weather-badge" :class="{ 'with-menu': store.navCollapsed }" @click="togglePanel">
     <!-- 加载中 -->
     <span v-if="loading" class="badge-loading">定位中…</span>
     <!-- 天气数据 -->
@@ -27,7 +27,7 @@
   <!-- 天气详情面板 -->
   <Teleport to="body">
     <Transition name="badge-fade">
-      <div v-show="panelShow" class="badge-panel" @click.stop>
+      <div v-show="panelShow" class="badge-panel" :style="panelStyle" @click.stop>
         <div class="panel-city">
           <span class="city-name">{{ weather.city || "未知城市" }}</span>
           <span class="city-temp">{{ weather.temperature !== null ? weather.temperature + "℃" : "--" }}</span>
@@ -52,6 +52,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
 import { showMessage } from "@/utils/message.js";
+import { windDirZh } from "@/utils/weather.js";
+import { mainStore } from "@/store";
+
+const store = mainStore();
 
 const mainKey = import.meta.env.VITE_WEATHER_KEY;
 
@@ -59,6 +63,7 @@ const loading = ref(true);
 const panelShow = ref(false);
 const needScroll = ref(false);
 const textWrapRef = ref(null);
+const panelStyle = ref({});
 const weather = ref({
   city: null,
   weather: null,
@@ -231,7 +236,7 @@ const loadByIp = async () => {
     city: cityInfo.zh || cityInfo.en,
     weather: weatherText,
     temperature: cond.temp_C || "0",
-    winddirection: cond.winddir16Point || "未知",
+    winddirection: windDirZh(cond.winddir16Point) || "未知",
     windpower: cond.windspeedKmph ? `${Math.round(Number(cond.windspeedKmph) / 5)}` : "0",
   };
 };
@@ -257,10 +262,28 @@ const loadWeather = async (silent) => {
   }
 };
 
+// 根据胶囊实时尺寸更新面板位置（始终保持同宽 + 紧贴正下方）
+const updatePanelPosition = () => {
+  const badge = document.querySelector(".weather-badge");
+  if (!badge) return;
+  const rect = badge.getBoundingClientRect();
+  let left = rect.left;
+  const width = rect.width;
+  // 边界保护：避免面板超出视口左右边缘
+  if (left < 8) left = 8;
+  if (left + width > window.innerWidth - 8) left = window.innerWidth - 8 - width;
+  panelStyle.value = {
+    top: `${rect.bottom + 8}px`,
+    left: `${left}px`,
+    width: `${width}px`,
+  };
+};
+
 // 打开 / 关闭面板
 const togglePanel = () => {
   if (loading.value) return;
   panelShow.value = !panelShow.value;
+  if (panelShow.value) updatePanelPosition();
 };
 
 // 点击外部关闭面板
@@ -270,15 +293,26 @@ const handleClickOutside = (e) => {
   panelShow.value = false;
 };
 
+// 监听胶囊尺寸变化，面板打开时实时同步宽度与位置
+let badgeObserver = null;
+
 onMounted(() => {
   loadWeather();
   document.addEventListener("click", handleClickOutside);
   window.addEventListener("resize", checkNeedScroll);
+  const badge = document.querySelector(".weather-badge");
+  if (badge && "ResizeObserver" in window) {
+    badgeObserver = new ResizeObserver(() => {
+      if (panelShow.value) updatePanelPosition();
+    });
+    badgeObserver.observe(badge);
+  }
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
   window.removeEventListener("resize", checkNeedScroll);
+  if (badgeObserver) badgeObserver.disconnect();
 });
 </script>
 
@@ -289,6 +323,14 @@ onBeforeUnmount(() => {
   right: 24px;
   z-index: 30;
   display: flex;
+  justify-content: space-between; // 胶囊内文字均匀分布
+  min-width: 180px; // 保证胶囊最小宽度，避免下拉面板文字过挤
+
+  // 顶部导航折叠为汉堡菜单时（横排放不下），胶囊让位汉堡按钮
+  &.with-menu {
+    right: 66px;
+  }
+
   align-items: center;
   gap: 6px;
   height: 34px;
@@ -367,6 +409,7 @@ onBeforeUnmount(() => {
     height: 30px;
     padding: 0 12px;
     font-size: 0.82rem;
+    min-width: 150px;
 
     .badge-text-wrap {
       max-width: 100px;
@@ -387,10 +430,8 @@ onBeforeUnmount(() => {
 // 天气详情面板
 .badge-panel {
   position: fixed;
-  top: 69px;
-  right: 24px;
   z-index: 30;
-  width: 220px;
+  // top / left / width 由 JS 根据胶囊实时尺寸动态设置
   padding: 16px;
   border-radius: 14px;
   background: rgb(0 0 0 / 45%);
@@ -398,6 +439,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgb(255 255 255 / 12%);
   box-shadow: 0 10px 30px rgb(0 0 0 / 30%);
   color: #fff;
+  box-sizing: border-box;
 
   .panel-city {
     display: flex;
@@ -433,9 +475,7 @@ onBeforeUnmount(() => {
   }
 
   @media (max-width: 720px) {
-    top: 61px;
-    right: 12px;
-    width: 200px;
+    padding: 12px;
   }
 }
 
