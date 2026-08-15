@@ -131,7 +131,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 18px;
   left: 195px;
-  right: 24px;
+  right: 220px; // 为右上角天气胶囊预留空间，避免遮挡标题
   height: 52px;
   z-index: 10;
   display: flex;

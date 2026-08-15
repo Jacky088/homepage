@@ -211,7 +211,7 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    top: 14px;
+    top: 23px; // 与天气胶囊垂直居中对齐（桌面端）
     right: 16px;
     left: auto;
     width: 42px;
@@ -227,6 +227,11 @@ onBeforeUnmount(() => {
     }
     .i-icon {
       transform: translateY(2px);
+    }
+  }
+  @media (max-width: 720px) {
+    .menu {
+      top: 14px; // 移动端保持原对齐
     }
   }
   @media (max-height: 720px) {
