@@ -716,27 +716,27 @@ watch(
   }
 
   // ---------- APlayer 列表细节优化 ----------
-  // 自定义细圆角滚动条（始终可见，不随滚动自动消失）
+  // 自定义细圆角滚动条（默认淡出，hover 时显现）
   .aplayer .aplayer-list ol::-webkit-scrollbar {
     width: 5px;
     -webkit-appearance: none;
   }
   .aplayer .aplayer-list ol::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    background: transparent;
   }
   .aplayer .aplayer-list ol::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 3px;
-    min-height: 30px; // 保证滑块始终有可见高度
+    min-height: 30px;
+    transition: background 0.2s ease;
   }
   .aplayer .aplayer-list ol::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.3);
   }
   // Firefox 滚动条
   .aplayer .aplayer-list ol {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) rgba(255, 255, 255, 0.05);
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
     // 阻止滚动穿透到外层页面
     overscroll-behavior-y: contain;
     // 滚动更顺滑

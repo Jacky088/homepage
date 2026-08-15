@@ -45,13 +45,45 @@ pnpm install
 pnpm dev
 ```
 
-### 构建生产版本
+### 构建生产版本（输出静态网站文件）
 
 ```bash
 pnpm build
 ```
 
-构建产物输出在 `dist/` 目录。
+构建产物（静态网站文件）输出在 `dist/` 目录，可直接部署到任意静态托管平台。
+
+`dist/` 目录包含：
+
+| 文件/目录 | 说明 |
+| --- | --- |
+| `index.html` | 入口页面 |
+| `assets/*.js` / `assets/*.css` | 打包压缩后的 JS / CSS 文件 |
+| `manifest.webmanifest` | PWA 清单 |
+| `sw.js` / `registerSW.js` / `workbox-*.js` | PWA Service Worker（离线缓存） |
+| `*.gz` | gzip 压缩产物 |
+| `images/`、`videos/` 等 | 静态资源 |
+
+**部署到静态托管平台（如 Vercel / EdgeOne / GitHub Pages / Nginx）：**
+
+```bash
+# 方式一：把 dist 目录上传到托管平台，作为站点根目录
+pnpm build
+# 然后将 dist/ 内容部署到服务器 / 托管平台
+
+# 方式二：本地预览构建产物（需先运行 pnpm build）
+pnpm preview
+```
+
+**自定义构建输出目录**（可选，用于多环境）：
+
+```bash
+pnpm build --outDir dist-production
+# 或
+npx vite build --outDir dist-production
+```
+
+> **说明**：线上部署时 `dist/` 内的 `%VITE_*%` 环境变量已在构建时注入，无需额外配置。
 
 ## 配置说明
 
