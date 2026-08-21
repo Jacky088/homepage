@@ -130,14 +130,13 @@ onBeforeUnmount(() => {
 .links {
   position: absolute;
   top: 18px;
-  left: 195px;
+  left: 220px;
   right: 220px; // 为右上角天气胶囊预留空间，避免遮挡标题
   height: 52px;
   z-index: 10;
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
-  padding-bottom: 8px;
+  align-items: center;
   gap: 28px;
   animation: fade 0.5s;
 
@@ -150,7 +149,6 @@ onBeforeUnmount(() => {
     position: relative;
     transition: opacity 0.3s, transform 0.3s, text-shadow 0.3s;
     opacity: 0.85;
-    padding-bottom: 6px;
 
     &::after {
       content: "";
