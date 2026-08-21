@@ -68,7 +68,7 @@ const siteUrl = computed(() => {
       padding-left: 12px;
       font-family: "Pacifico-Regular";
       white-space: nowrap;
-      transform: translateY(-2px);
+      transform: translateY(-4px);
 
       .bg {
         font-size: 2rem;
