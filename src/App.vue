@@ -236,11 +236,7 @@ onBeforeUnmount(() => {
     .container {
       height: 100vh;
     }
-    .menu {
-      top: 23px; // 与logo圆心对齐（此断点logo仍为桌面尺寸）
-      right: 16px;
-      left: auto;
-    }
+    // menu 不单独设置 top，继承桌面默认或 max-width:720px 断点值，始终与 logo 对齐
   }
   @media (max-width: 390px) {
     overflow: hidden;
