@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
   }
 
   @media (max-width: 720px) {
-    top: 23px;
+    top: 20px;
     right: 66px; // 避开移动端菜单按钮
     height: 30px;
     padding: 0 12px;
