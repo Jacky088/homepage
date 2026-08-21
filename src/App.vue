@@ -225,9 +225,6 @@ onBeforeUnmount(() => {
     &:active {
       transform: scale(0.95);
     }
-    .i-icon {
-      transform: translateY(2px);
-    }
   }
   @media (max-width: 720px) {
     .menu {
@@ -240,7 +237,7 @@ onBeforeUnmount(() => {
       height: 100vh;
     }
     .menu {
-      top: 14px;
+      top: 23px; // 与logo圆心对齐（此断点logo仍为桌面尺寸）
       right: 16px;
       left: auto;
     }
