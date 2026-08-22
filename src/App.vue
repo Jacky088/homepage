@@ -222,6 +222,12 @@ onBeforeUnmount(() => {
     transition: transform 0.3s;
     animation: fade 0.5s;
     z-index: 20;
+    // 项目未引入 icon-park 官方样式，.i-icon 行盒高于内部 svg（基线上下空隙不等），
+    // 导致三横线相对圆心上浮，这里手动归零行盒高度使其精确居中
+    :deep(.i-icon) {
+      display: inline-flex;
+      line-height: 0;
+    }
     &:active {
       transform: scale(0.95);
     }
