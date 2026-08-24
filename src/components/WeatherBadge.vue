@@ -1,5 +1,10 @@
 <template>
-  <div class="weather-badge" :class="{ 'with-menu': store.navCollapsed }" @click="togglePanel">
+  <div
+    class="weather-badge"
+    :class="{ 'with-menu': store.navCollapsed }"
+    :style="badgeStyle"
+    @click="togglePanel"
+  >
     <!-- 加载中 -->
     <span v-if="loading" class="badge-loading">定位中…</span>
     <!-- 天气数据 -->
@@ -64,6 +69,7 @@ const panelShow = ref(false);
 const needScroll = ref(false);
 const textWrapRef = ref(null);
 const panelStyle = ref({});
+const badgeStyle = ref({}); // 动态最大宽度（移动端），避免与左侧 logo 网址重叠
 const weather = ref({
   city: null,
   weather: null,
@@ -193,6 +199,29 @@ const checkNeedScroll = () => {
   });
 };
 
+// 移动端：按 logo 旁网址的实际宽度动态限制胶囊最大宽度，避免与网址重叠
+// 胶囊右边距（移动端固定 66px，避开菜单按钮）+ 间距 12px
+const updateBadgeWidth = () => {
+  if (window.innerWidth > 720) {
+    badgeStyle.value = {};
+    return;
+  }
+  const logo = document.querySelector(".message .logo");
+  if (!logo) {
+    badgeStyle.value = {};
+    return;
+  }
+  const logoRect = logo.getBoundingClientRect();
+  const gap = 12;
+  // 胶囊可用宽度 = 视口宽度 - 胶囊右边距 - logo 网址右边界 - 间距
+  const available = window.innerWidth - 66 - logoRect.right - gap;
+  // 仅在可用宽度不足时才收窄；保证至少能放下温度与图标
+  const maxW = Math.min(available, 220);
+  badgeStyle.value = maxW < 220 ? { maxWidth: `${maxW}px` } : {};
+  // 限制后可能触发跑马灯，重新检测
+  checkNeedScroll();
+};
+
 // 高德 IP 定位 + 天气
 const loadByAmap = async () => {
   const adCodeRes = await getAdcode(mainKey);
@@ -258,17 +287,21 @@ const loadWeather = async (silent) => {
     }
   } finally {
     loading.value = false;
+    updateBadgeWidth();
     checkNeedScroll();
   }
 };
 
-// 根据胶囊实时尺寸更新面板位置（始终保持同宽 + 紧贴正下方）
+// 根据胶囊实时尺寸更新面板位置（移动端胶囊可能被收窄，面板独立设定宽度避免文字过挤）
 const updatePanelPosition = () => {
   const badge = document.querySelector(".weather-badge");
   if (!badge) return;
   const rect = badge.getBoundingClientRect();
   let left = rect.left;
-  const width = rect.width;
+  // 移动端面板宽度独立于胶囊，保证详情可读
+  const width = window.innerWidth <= 720 ? 220 : rect.width;
+  // 面板右边缘与胶囊右边缘对齐
+  left = rect.right - width;
   // 边界保护：避免面板超出视口左右边缘
   if (left < 8) left = 8;
   if (left + width > window.innerWidth - 8) left = window.innerWidth - 8 - width;
@@ -295,11 +328,19 @@ const handleClickOutside = (e) => {
 
 // 监听胶囊尺寸变化，面板打开时实时同步宽度与位置
 let badgeObserver = null;
+let logoObserver = null;
+
+// 窗口尺寸变化：重新计算胶囊上限 + 跑马灯
+const onResize = () => {
+  updateBadgeWidth();
+  checkNeedScroll();
+};
 
 onMounted(() => {
   loadWeather();
   document.addEventListener("click", handleClickOutside);
-  window.addEventListener("resize", checkNeedScroll);
+  window.addEventListener("resize", onResize);
+  updateBadgeWidth();
   const badge = document.querySelector(".weather-badge");
   if (badge && "ResizeObserver" in window) {
     badgeObserver = new ResizeObserver(() => {
@@ -307,12 +348,19 @@ onMounted(() => {
     });
     badgeObserver.observe(badge);
   }
+  // 监听 logo 元素尺寸变化（如字体/图片加载完成），同步胶囊上限
+  const logo = document.querySelector(".message .logo");
+  if (logo && "ResizeObserver" in window) {
+    logoObserver = new ResizeObserver(() => updateBadgeWidth());
+    logoObserver.observe(logo);
+  }
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
-  window.removeEventListener("resize", checkNeedScroll);
+  window.removeEventListener("resize", onResize);
   if (badgeObserver) badgeObserver.disconnect();
+  if (logoObserver) logoObserver.disconnect();
 });
 </script>
 
@@ -409,7 +457,7 @@ onBeforeUnmount(() => {
     height: 30px;
     padding: 0 12px;
     font-size: 0.82rem;
-    min-width: 150px;
+    min-width: 0; // 允许 maxWidth 收窄生效，避免与 logo 网址重叠
 
     .badge-text-wrap {
       max-width: 100px;
