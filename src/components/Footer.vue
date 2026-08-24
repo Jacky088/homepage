@@ -16,9 +16,9 @@
         <!-- 以下信息请不要修改哦 -->
    
         <!-- 站点备案 -->
-        <span>
+        <span v-if="siteIcp">
           &amp;
-          <a v-if="siteIcp" href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
+          <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
             {{ siteIcp }}
           </a>
         </span>
