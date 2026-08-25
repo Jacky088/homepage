@@ -9,6 +9,11 @@
     "name": "网站导航",
     "link": "https://nav.mmcoo.de/"
   },
+       {
+    "icon": "Fire",
+    "name": "每日热榜",
+    "link": "https://hot.mmcoo.de/"
+  }, 
    {
     "icon": "LaptopCode",
     "name": "站点状态",
@@ -24,12 +29,6 @@
     "name": "IP查询",
     "link": "https://ippure.com/"
   }, 
-     {
-    "icon": "Fire",
-    "name": "每日热榜",
-    "link": "https://allhot.top/"
-  }, 
-
   {
     "icon": "Cloud",
     "name": "文件快递柜",
