@@ -28,12 +28,6 @@
     "pinia-plugin-persistedstate": "^3.2.1",
     "vue": "^3.4.24"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "vue-demi"
-    ]
-  },
   "devDependencies": {
     "@icon-park/vue-next": "^1.4.2",
     "@vicons/fa": "^0.12.0",
