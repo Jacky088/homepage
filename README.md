@@ -156,7 +156,7 @@ pnpm preview
 
 | 平台 | 一键部署 | 构建命令 | 输出目录 |
 | --- | --- | --- | --- |
-| Vercel | [![Deploy with Vercel](https://vercel.com/new/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage) | `pnpm build`（自动识别） | `dist`（自动识别） |
+| Vercel | [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage) | `pnpm build`（自动识别） | `dist`（自动识别） |
 | Cloudflare Pages | [![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage) | `pnpm build` | `dist` |
 | EdgeOne Pages | [![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&repository-url=https://github.com/Jacky088/homepage) | `pnpm build` | `dist` |
 
