@@ -127,9 +127,11 @@ onMounted(() => {
       font-size: clamp(1.4rem, 2.2vw + 0.8rem, 2.2rem);
       text-align: center;
       line-height: 1.5;
-      // 断行优化：避免标点悬行，多行时长度更均衡
+      // 中文断行规则：禁则处理（标点不入行首）+ 词首禁断
+      // （keep-all 关闭字间任意断行，line-break: strict 禁止"，。？！"等标点出现在行首）
       word-break: keep-all;
-      overflow-wrap: anywhere;
+      line-break: strict;
+      overflow-wrap: break-word;
       text-wrap: balance;
     }
     .from {
