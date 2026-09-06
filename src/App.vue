@@ -16,8 +16,8 @@
           <MoreSet />
         </section>
       </div>
-      <!-- 顶栏天气徽章 -->
-      <WeatherBadge v-show="!store.backgroundShow && !store.setOpenState" />
+      <!-- 顶栏天气徽章（显隐由组件内部响应 store 状态，避免多根组件上的运行时指令警告） -->
+      <WeatherBadge />
       <!-- 移动端菜单按钮 -->
       <Transition name="fade">
         <Icon

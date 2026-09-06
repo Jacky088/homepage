@@ -1,5 +1,7 @@
 <template>
+  <!-- 显隐由组件内部响应 store 状态（壁纸展示 / 设置页时隐藏），避免在多根组件上继承 v-show 指令 -->
   <div
+    v-show="!store.backgroundShow && !store.setOpenState"
     class="weather-badge"
     :class="{ 'with-menu': store.navCollapsed }"
     :style="badgeStyle"
