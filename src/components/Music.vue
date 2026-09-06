@@ -240,59 +240,80 @@ const changeMusicIndex = (type) => {
   playerRef.value.changeSong(type);
 };
 
-onMounted(() => {
-  // 空格键事件
-  window.addEventListener("keydown", (e) => {
-    if (!store.musicIsOk) {
+// 空格键切换播放（输入框聚焦时忽略，避免打字空格误触）
+const onKeydown = (e) => {
+  if (!store.musicIsOk) {
+    return;
+  }
+  if (e.code == "Space") {
+    const target = e.target;
+    if (
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable)
+    ) {
       return;
     }
-    if (e.code == "Space") {
-      changePlayState();
-    }
-  });
+    changePlayState();
+  }
+};
+
+// 音乐列表滚动回弹效果：滚到顶/底时短暂位移再弹回
+const onListBoxWheel = (e) => {
+  const ol = musicListBoxEl?.querySelector(".aplayer-list ol");
+  if (!ol) return;
+  // 已经在滚动区域内
+  const isAtTop = ol.scrollTop <= 0;
+  const isAtBottom = ol.scrollTop + ol.clientHeight >= ol.scrollHeight - 1;
+  // 在顶部还想继续下滚 / 在底部还想继续上滚 → 触发回弹
+  if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+    const isTopBounce = isAtTop;
+    ol.style.transition = "transform 0.18s ease-out";
+    ol.style.transform = isTopBounce
+      ? `translateY(${-Math.min(Math.abs(e.deltaY) * 0.25, 12)}px)`
+      : `translateY(${Math.min(e.deltaY * 0.25, 12)}px)`;
+    // 清除之前的计时器
+    if (rubberBandTimer) clearTimeout(rubberBandTimer);
+    // 150ms 后回弹
+    rubberBandTimer = setTimeout(() => {
+      ol.style.transition = "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)";
+      ol.style.transform = "translateY(0)";
+      // 动画结束后清除 transition 避免影响其他样式
+      setTimeout(() => {
+        ol.style.transition = "";
+      }, 320);
+    }, 150);
+  }
+};
+
+let rubberBandTimer = null;
+let musicListBoxEl = null;
+
+onMounted(() => {
+  window.addEventListener("keydown", onKeydown);
   // 挂载方法至 window
   window.$openList = openMusicList;
   // 启动进度同步
   startProgressSync();
 
-  // 音乐列表滚动回弹效果：滚到顶/底时短暂位移再弹回
-  const musicListBox = document.querySelector(".music-list-box");
-  if (musicListBox) {
-    let rubberBandTimer = null;
-    musicListBox.addEventListener(
-      "wheel",
-      (e) => {
-        const ol = musicListBox.querySelector(".aplayer-list ol");
-        if (!ol) return;
-        // 已经在滚动区域内
-        const isAtTop = ol.scrollTop <= 0;
-        const isAtBottom = ol.scrollTop + ol.clientHeight >= ol.scrollHeight - 1;
-        // 在顶部还想继续下滚 / 在底部还想继续上滚 → 触发回弹
-        if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
-          const isTopBounce = isAtTop;
-          ol.style.transition = "transform 0.18s ease-out";
-          ol.style.transform = isTopBounce
-            ? `translateY(${-Math.min(Math.abs(e.deltaY) * 0.25, 12)}px)`
-            : `translateY(${Math.min(e.deltaY * 0.25, 12)}px)`;
-          // 清除之前的计时器
-          if (rubberBandTimer) clearTimeout(rubberBandTimer);
-          // 150ms 后回弹
-          rubberBandTimer = setTimeout(() => {
-            ol.style.transition = "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)";
-            ol.style.transform = "translateY(0)";
-            // 动画结束后清除 transition 避免影响其他样式
-            setTimeout(() => {
-              ol.style.transition = "";
-            }, 320);
-          }, 150);
-        }
-      },
-      { passive: true },
-    );
+  musicListBoxEl = document.querySelector(".music-list-box");
+  if (musicListBoxEl) {
+    musicListBoxEl.addEventListener("wheel", onListBoxWheel, { passive: true });
   }
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onKeydown);
+  if (window.$openList === openMusicList) {
+    delete window.$openList;
+  }
+  if (musicListBoxEl) {
+    musicListBoxEl.removeEventListener("wheel", onListBoxWheel);
+    musicListBoxEl = null;
+  }
+  if (rubberBandTimer) clearTimeout(rubberBandTimer);
   stopProgressSync();
 });
 

@@ -13,3 +13,10 @@ dist
 build
 images
 script
+
+# 环境变量不进入构建上下文（构建时由 CI/环境注入或使用 .env.example）
+.env
+.env.*
+!.env.example
+logs
+*.log

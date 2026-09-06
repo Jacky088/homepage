@@ -48,12 +48,12 @@ const getHitokotoData = async () => {
   }
 };
 
+// 防抖实例需在组件作用域内复用，每次点击新建会导致防抖失效
+const debouncedFetch = debounce(getHitokotoData, 500);
+
 // 更新一言数据
 const updateHitokoto = () => {
-  // 防抖
-  debounce(() => {
-    getHitokotoData();
-  }, 500);
+  debouncedFetch();
 };
 
 onMounted(() => {

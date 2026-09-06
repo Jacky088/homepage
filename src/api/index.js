@@ -3,6 +3,36 @@
 import fetchJsonp from "fetch-jsonp";
 
 /**
+ * JSONP 端点域名白名单：仅允许音乐平台官方 CDN，
+ * 防止上游 Meting API 被劫持时注入任意脚本执行
+ */
+const JSONP_ALLOWED_HOSTS = [
+  "music.163.com",
+  ".music.126.net",
+  ".qq.com",
+  ".qqmusic.qq.com",
+  ".music.tc.qq.com",
+  ".ws.stream.qqmusic.qq.com",
+  ".dl.stream.qqmusic.qq.com",
+  ".isure.stream.qqmusic.qq.com",
+];
+
+const isAllowedJsonpUrl = (rawUrl) => {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    const host = url.hostname.toLowerCase();
+    return JSONP_ALLOWED_HOSTS.some((pattern) =>
+      pattern.startsWith(".")
+        ? host === pattern.slice(1) || host.endsWith(pattern)
+        : host === pattern || host.endsWith(`.${pattern}`),
+    );
+  } catch {
+    return false;
+  }
+};
+
+/**
  * 获取音乐播放列表（你已有代码，保留即可）
  */
 export const getPlayerList = async (server, type, id) => {
@@ -33,6 +63,9 @@ export const getPlayerList = async (server, type, id) => {
   if (songUrl.startsWith("@")) {
     // eslint-disable-next-line no-unused-vars
     const [handle, jsonpCallback, jsonpCallbackFunction, url] = songUrl.split("@").slice(1);
+    if (!url || !isAllowedJsonpUrl(url)) {
+      throw new Error("歌曲接口返回的 JSONP 地址不在允许的域名白名单内，已阻止执行");
+    }
     const jsonpData = await fetchJsonp(url).then((res) => res.json());
     const domain = (
       jsonpData.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
@@ -72,9 +105,17 @@ export const getHitokoto = async () => {
  * 天气相关接口
  */
 
+/**
+ * 高德 API 基地址：
+ * - 默认直连 restapi.amap.com（key 会暴露在前端产物中，仅测试用）
+ * - 配置 VITE_AMAP_BASE 后走自建代理（如 Cloudflare Worker），key 由代理注入，
+ *   此时前端不再需要 VITE_WEATHER_KEY
+ */
+const AMAP_BASE = (import.meta.env.VITE_AMAP_BASE || "https://restapi.amap.com").replace(/\/+$/, "");
+
 // 高德API：获取地理位置信息
 export const getAdcode = async (key) => {
-  const res = await fetch(`https://restapi.amap.com/v3/ip?key=${key}`);
+  const res = await fetch(`${AMAP_BASE}/v3/ip?key=${key}`);
   if (!res.ok) {
     throw new Error(`地理位置接口请求失败，状态码：${res.status}`);
   }
@@ -84,7 +125,7 @@ export const getAdcode = async (key) => {
 // 高德API：根据城市名获取地理位置编码 (adcode)
 export const getAdcodeByCity = async (key, cityName) => {
   const res = await fetch(
-    `https://restapi.amap.com/v3/config/district?keywords=${encodeURIComponent(cityName)}&key=${key}&subdistrict=0`
+    `${AMAP_BASE}/v3/config/district?keywords=${encodeURIComponent(cityName)}&key=${key}&subdistrict=0`
   );
   if (!res.ok) {
     throw new Error(`城市编码接口请求失败，状态码：${res.status}`);
@@ -95,7 +136,7 @@ export const getAdcodeByCity = async (key, cityName) => {
 // 高德API：根据城市编码获取天气信息
 export const getWeather = async (key, city) => {
   const res = await fetch(
-    `https://restapi.amap.com/v3/weather/weatherInfo?key=${key}&city=${city}`,
+    `${AMAP_BASE}/v3/weather/weatherInfo?key=${key}&city=${city}`,
     { cache: "no-cache" }
   );
   if (!res.ok) {

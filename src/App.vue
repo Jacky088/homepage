@@ -99,7 +99,7 @@ onMounted(() => {
   };
 
   // 鼠标中键事件
-  window.addEventListener("mousedown", (event) => {
+  const onMiddleMouseDown = (event) => {
     if (event.button == 1) {
       store.backgroundShow = !store.backgroundShow;
       showMessage({
@@ -107,7 +107,8 @@ onMounted(() => {
         grouping: true,
       });
     }
-  });
+  };
+  window.addEventListener("mousedown", onMiddleMouseDown);
 
   // 监听当前页面宽度
   getWidth();
@@ -115,6 +116,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("mousedown", onMiddleMouseDown);
   window.removeEventListener("resize", getWidth);
 });
 </script>
