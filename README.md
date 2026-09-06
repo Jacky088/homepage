@@ -30,8 +30,8 @@
 
 ### 环境要求
 
-- Node.js >= 16
-- pnpm >= 8
+- Node.js >= 22.13（pnpm 11 依赖 `node:sqlite` 内置模块）
+- pnpm >= 11（版本由 `package.json` 的 `packageManager` 字段固定，corepack 会自动使用）
 
 ### 安装依赖
 
@@ -51,7 +51,7 @@ pnpm dev
 pnpm build
 ```
 
-构建产物（静态网站文件）输出在 `dist/` 目录，可直接部署到任意静态托管平台。
+构建产物（静态网站文件）输出在 `dist/` 目录，部署方式见 [部署](#部署) 章节。
 
 `dist/` 目录包含：
 
@@ -64,33 +64,20 @@ pnpm build
 | `*.gz` | gzip 压缩产物 |
 | `images/`、`videos/` 等 | 静态资源 |
 
-**部署到静态托管平台（如 Vercel / EdgeOne / GitHub Pages / Nginx）：**
+本地预览构建产物：
 
 ```bash
-# 方式一：把 dist 目录上传到托管平台，作为站点根目录
-pnpm build
-# 然后将 dist/ 内容部署到服务器 / 托管平台
-
-# 方式二：本地预览构建产物（需先运行 pnpm build）
 pnpm preview
 ```
 
-**自定义构建输出目录**（可选，用于多环境）：
-
-```bash
-pnpm build --outDir dist-production
-# 或
-npx vite build --outDir dist-production
-```
-
-> **说明**：线上部署时 `dist/` 内的 `%VITE_*%` 环境变量已在构建时注入，无需额外配置。
+> **注意**：构建前需先配置环境变量（见 [配置说明](#配置说明)），否则 `index.html` 中的 `%VITE_*%` 占位符无法注入，构建会失败。
 
 ## 配置说明
 
-项目通过 `VITE_` 开头的环境变量进行配置，**两种方式任选其一**：
+项目通过 `VITE_` 开头的环境变量配置。`.env` 不在仓库中，配置方式按使用场景选择：
 
-- **方式一：`.env` 文件（适合本地开发）**：复制 `.env.example` 为 `.env`，按需修改配置项。
-- **方式二：云平台环境变量（适合线上部署）**：在 Vercel / EdgeOne 等平台的控制台添加同名环境变量（**值不要带引号**），配置后需**重新部署**生效。
+- **本地开发 / 静态构建 / Docker**：复制 `.env.example` 为 `.env`，按需修改；
+- **托管平台**：在平台控制台添加环境变量（首选，改配置无需提交代码），或把 `.env` 提交进仓库（**切勿在其中存放密钥**）。
 
 > **优先级提示**：若同一个变量在 `.env` 文件和云平台控制台**都配置了值**，以 **云平台环境变量** 为准。
 
@@ -108,6 +95,7 @@ npx vite build --outDir dist-production
 | VITE_SONG_TYPE | 播放类型 | playlist |
 | VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
 | VITE_WEATHER_KEY | 高德 Web 服务 Key（留空则用 IP 定位） | xxxxxxxx |
+| VITE_AMAP_BASE | 高德 API 代理地址（可选，留空直连官方） | https://example.com/amap |
 
 ### 自定义链接
 
@@ -143,7 +131,7 @@ npx vite build --outDir dist-production
 | `VITE_WEATHER_KEY` 为空（默认） | ipinfo.io / ipapi.co IP 定位 | wttr.in 备用接口 |
 
 **配置方式：**
-1. **推荐（国内稳定）**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key**（免费，每日上限 5000 次），填入 `VITE_WEATHER_KEY`。
+1. **推荐（国内稳定）**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key**（免费，每日上限 5000 次）。为避免 Key 暴露在前端产物中被盗刷，建议配合 `worker/amap-proxy.js` 部署代理并配置 `VITE_AMAP_BASE`（见部署章节）。
 2. **免配置**：`VITE_WEATHER_KEY` 留空即可，自动使用 ipinfo.io / ipapi.co 定位 + wttr.in 获取天气，无需申请任何 Key。
 
 **说明：**
@@ -152,35 +140,63 @@ npx vite build --outDir dist-production
 
 ## 部署
 
-本项目为纯静态 SPA，可部署到任何静态托管平台：
+本项目为纯静态 SPA，支持三种部署方式，按需选择：
 
-### Vercel
+| 方式 | 适合场景 | 配置方式 |
+| --- | --- | --- |
+| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` |
+| 静态文件构建 | 自有服务器 / 任意静态托管 | 本地配置 `.env` 后构建，上传 `dist/` |
+| Docker | 自有服务器，容器化运行 | 本地配置 `.env` 后构建镜像 |
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage)
+> **⚠️ 重要**：`.env` 不在 Git 仓库中，托管平台的构建环境默认**没有任何 `VITE_*` 变量**。不先配置变量会导致构建失败（`URIError: URI malformed`）。各平台配置方法见下文，变量说明见 [配置说明](#配置说明)。
 
-1. 导入 GitHub 仓库
-2. Framework Preset 选择 Vite
-3. 自动识别构建命令和输出目录
+### 托管平台部署（Vercel / Cloudflare Pages / EdgeOne）
 
-### Cloudflare Pages
+三个平台步骤一致：导入仓库 → 配置环境变量 → 部署。
 
-[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
+| 平台 | 一键部署 | 构建命令 | 输出目录 |
+| --- | --- | --- | --- |
+| Vercel | [![Deploy with Vercel](https://vercel.com/new/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jacky088/homepage) | `pnpm build`（自动识别） | `dist`（自动识别） |
+| Cloudflare Pages | [![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage) | `pnpm build` | `dist` |
+| EdgeOne Pages | [![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&repository-url=https://github.com/Jacky088/homepage) | `pnpm build` | `dist` |
 
-1. 连接 GitHub 仓库
-2. Build command: `pnpm build`
-3. Build output directory: `dist`
+**环境变量配置（部署前必做）：**
 
-### EdgeOne Pages
+1. 在平台项目的 Settings → Environment Variables 中，参照 [配置说明](#配置说明) 的变量表逐条添加（**值不要带引号**）；
+2. 配置后**重新部署**（Redeploy）生效。
 
-[![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&repository-url=https://github.com/Jacky088/homepage)
+> 平台控制台的变量优先级高于 `.env` 文件；Node.js 版本无需手动设置（`engines` 字段已声明，Vercel 会自动选用 Node 22+）。
 
-构建命令 `pnpm build`，输出目录 `dist`。
+### 静态文件构建
+
+```bash
+cp .env.example .env   # 编辑 .env 填入自己的配置
+pnpm build             # 产物输出到 dist/
+```
+
+将 `dist/` 内容部署到任意静态服务器或托管平台即可。本地可运行 `pnpm preview` 预览构建产物。
 
 ### Docker
 
 ```bash
-docker-compose up -d
+cp .env.example .env   # 必须先准备 .env，否则使用模板默认值
+# 编辑 .env 填入自己的配置
+docker-compose up -d   # 端口 12445
 ```
+
+运行镜像基于 `nginx:alpine`，已内置缓存策略与 PWA 响应头（`sw.js` 不缓存、带 hash 资源长缓存、gzip）。
+
+### Cloudflare Worker（高德 API 代理，可选）
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
+
+使用高德天气 Key 且不想将其暴露在前端产物中时，可部署代理 Worker。由于代理脚本位于 `worker/amap-proxy.js` 子目录，一键部署后需将 Worker 脚本内容替换为该文件内容（或本地执行 `wrangler deploy worker/amap-proxy.js`），然后：
+
+1. 在 Worker 的 Settings → Variables 中添加 `AMAP_KEY`（高德 Web 服务 Key），可选配 `ALLOWED_ORIGIN` 限制调用来源；
+2. 为 Worker 绑定路由或自定义域（如 `https://你的域名/amap/*`）；
+3. 在前端项目的环境变量中设置 `VITE_AMAP_BASE` 指向该 Worker 地址，重新部署。
+
+不使用代理时 `VITE_AMAP_BASE` 留空即可，天气功能走 IP 定位 + wttr.in，无需任何 Key。
 
 ## 项目结构
 

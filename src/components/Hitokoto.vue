@@ -6,7 +6,7 @@
   >
     <!-- 一言内容 -->
     <Transition name="el-fade-in-linear" mode="out-in">
-      <div :key="hitokotoData.text" class="content" @click="updateHitokoto">
+      <div :key="hitokotoData.text" class="content" @click="updateHitokoto" :title="clickable ? '点击换一句' : null">
         <span class="text">{{ hitokotoData.text }}</span>
         <span class="from">-「&nbsp;{{ hitokotoData.from }}&nbsp;」</span>
       </div>
@@ -23,11 +23,38 @@ import debounce from "@/utils/debounce.js";
 
 const store = mainStore();
 
-// 一言数据
+// 一言本地缓存：接口抖动时用上一条一言兜底，避免首屏出现占位文案
+const HITOKOTO_CACHE_KEY = "hitokoto_cache";
+
+const readCache = () => {
+  try {
+    const raw = localStorage.getItem(HITOKOTO_CACHE_KEY);
+    const data = raw ? JSON.parse(raw) : null;
+    if (data && data.text && data.from) return data;
+  } catch {
+    // 缓存损坏时静默清除
+    localStorage.removeItem(HITOKOTO_CACHE_KEY);
+  }
+  return null;
+};
+
+const writeCache = (data) => {
+  try {
+    localStorage.setItem(HITOKOTO_CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // 存储不可用时忽略（隐私模式等场景）
+  }
+};
+
+// 一言数据（优先使用上次缓存，保证首屏有内容）
+const cached = readCache();
 const hitokotoData = reactive({
-  text: "这里应该显示一句话",
-  from: "無名",
+  text: cached ? cached.text : "这里应该显示一句话",
+  from: cached ? cached.from : "無名",
 });
+
+// 是否展示可点击提示（仅首屏为占位文案时提示"点击换一句"）
+const clickable = computed(() => hitokotoData.text !== "这里应该显示一句话");
 
 // 获取一言数据
 const getHitokotoData = async () => {
@@ -35,16 +62,18 @@ const getHitokotoData = async () => {
     const result = await getHitokoto();
     hitokotoData.text = result.hitokoto;
     hitokotoData.from = result.from;
+    writeCache({ text: result.hitokoto, from: result.from });
   } catch (error) {
-    showMessage({
-      message: "一言获取失败",
-      icon: h(Error, {
-        theme: "filled",
-        fill: "#efefef",
-      }),
-    });
-    hitokotoData.text = "这里应该显示一句话";
-    hitokotoData.from = "無名";
+    // 首屏且无缓存时才提示，点击刷新失败不打扰
+    if (!readCache()) {
+      showMessage({
+        message: "一言获取失败",
+        icon: h(Error, {
+          theme: "filled",
+          fill: "#efefef",
+        }),
+      });
+    }
   }
 };
 
@@ -79,10 +108,29 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     max-width: 70vw;
+    // 扩大点击热区（负 margin 抵消，不改变视觉布局）
+    padding: 8px 12px;
+    margin: -8px -12px;
+    cursor: pointer;
+    // 固定最小高度，切换一言时容器高度变化更平滑
+    min-height: 4.2em;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+
+    // 可点击暗示：占位文案时轻微呼吸动画引导点击
+    &.is-placeholder {
+      animation: hitokoto-breath 2.4s ease-in-out infinite;
+    }
+
     .text {
-      font-size: 2rem;
-      text-align: justify;
+      // 流式字号：窄窗口缩小、超宽屏适度放大，无需断点
+      font-size: clamp(1.4rem, 2.2vw + 0.8rem, 2.2rem);
+      text-align: center;
       line-height: 1.5;
+      // 断行优化：避免标点悬行，多行时长度更均衡
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      text-wrap: balance;
     }
     .from {
       font-size: 1.2rem;
@@ -90,6 +138,10 @@ onMounted(() => {
       opacity: 0.8;
       margin-top: 12px;
       align-self: flex-end;
+      // 来源名过长时省略，不溢出容器
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
   }
@@ -100,8 +152,10 @@ onMounted(() => {
     .content {
       flex-direction: column;
       gap: 12px;
+      max-width: 88vw;
+      min-height: 5.4em;
       .text {
-        font-size: 1.15rem;
+        font-size: clamp(1.05rem, 3.6vw, 1.15rem);
         white-space: normal;
         max-width: 88vw;
         line-height: 1.8;
@@ -110,6 +164,17 @@ onMounted(() => {
         font-size: 0.95rem;
       }
     }
+  }
+}
+
+// 呼吸动画：仅占位文案期间引导用户点击
+@keyframes hitokoto-breath {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }
 </style>
