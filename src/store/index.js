@@ -22,6 +22,7 @@ export const mainStore = defineStore("main", {
       playerTitle: null, // 当前播放歌曲名
       playerArtist: null, // 当前播放歌手名
       playerLrc: "歌词加载中", // 当前播放歌词
+      playerLrcDuration: 0, // 本句歌词停留时长（秒），0 表示未知
       playerLrcShow: true, // 是否显示底栏歌词
       footerBlur: true, // 底栏模糊
       playerAutoplay: false, // 是否自动播放
@@ -70,6 +71,10 @@ export const mainStore = defineStore("main", {
     // 更改歌词
     setPlayerLrc(value) {
       this.playerLrc = value;
+    },
+    // 更改本句歌词停留时长
+    setPlayerLrcDuration(value) {
+      this.playerLrcDuration = value;
     },
     // 更改歌曲数据
     setPlayerData(title, artist) {

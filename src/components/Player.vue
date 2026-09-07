@@ -151,6 +151,10 @@ const onTimeUp = () => {
     lrc = "歌词加载失败";
   }
   store.setPlayerLrc(lrc);
+  // 本句停留时长 = 下一句时间点 - 本句时间点，供底栏跑马灯速度自适应
+  const current = lyrics[lyricIndex][0];
+  const next = lyrics[lyricIndex + 1]?.[0];
+  store.setPlayerLrcDuration(next ? next - current : 0);
 };
 
 // 切换播放暂停事件

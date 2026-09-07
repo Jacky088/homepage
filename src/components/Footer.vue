@@ -93,10 +93,15 @@ const measureMarquee = async () => {
   if (overflow > 4) {
     isMarquee.value = true;
     marqueeDistance.value = overflow;
-    // 速度随内容长度自适应：以 60px/s 为基准，限制在 6~20s，
-    // 保证滚动节奏与歌曲进度大致同步
-    const speed = 60; // px/s
-    marqueeDuration.value = Math.min(20, Math.max(6, (overflow + clip.clientWidth) / speed));
+    // 速度按本句歌词停留时长自适应：总行程（溢出 + 可视宽）在句尾前刚好滚完；
+    // 停留时长未知时退回 60px/s 基准。上限防极短句滚太快，下限保证可读性
+    const stay = store.playerLrcDuration;
+    const travel = overflow + clip.clientWidth;
+    if (stay > 1) {
+      marqueeDuration.value = Math.min(45, Math.max(5, stay));
+    } else {
+      marqueeDuration.value = Math.min(20, Math.max(6, travel / 60));
+    }
   } else {
     isMarquee.value = false;
   }
@@ -177,9 +182,9 @@ const marqueeStyle = computed(() => {
         width: max-content;
         max-width: none;
 
-        // 超宽歌词：往返跑马灯
+        // 超宽歌词：单程滚动，滚到末端停住不回滚（forwards 保持终点位置）
         &.marquee {
-          animation: lrc-marquee var(--marquee-duration, 12s) linear infinite alternate;
+          animation: lrc-marquee var(--marquee-duration, 12s) linear forwards;
         }
       }
   }
@@ -189,7 +194,7 @@ const marqueeStyle = computed(() => {
     font-size: 16px;
   }
 
-  // 歌词跑马灯：起点稍作停顿感（首程从 0 滚到 -distance，alternate 自动回程）
+  // 歌词跑马灯：单程从起点滚到 -distance，forwards 停在末端
   @keyframes lrc-marquee {
     from {
       transform: translateX(0);

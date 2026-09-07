@@ -8,7 +8,7 @@
     <Transition name="el-fade-in-linear" mode="out-in">
       <div :key="hitokotoData.text" class="content" @click="updateHitokoto" :title="clickable ? '点击换一句' : null">
         <span class="text">{{ hitokotoData.text }}</span>
-        <span class="from">-「&nbsp;{{ hitokotoData.from }}&nbsp;」</span>
+        <span v-if="hitokotoData.hasFrom" class="from">-「&nbsp;{{ hitokotoData.from }}&nbsp;」</span>
       </div>
     </Transition>
   </div>
@@ -30,7 +30,10 @@ const readCache = () => {
   try {
     const raw = localStorage.getItem(HITOKOTO_CACHE_KEY);
     const data = raw ? JSON.parse(raw) : null;
-    if (data && data.text && data.from) return data;
+    if (data && data.text) {
+      // 旧缓存（uapis 之前）默认带出处
+      return { hasFrom: data.hasFrom !== false, from: data.from || "", text: data.text };
+    }
   } catch {
     // 缓存损坏时静默清除
     localStorage.removeItem(HITOKOTO_CACHE_KEY);
@@ -51,6 +54,7 @@ const cached = readCache();
 const hitokotoData = reactive({
   text: cached ? cached.text : "这里应该显示一句话",
   from: cached ? cached.from : "無名",
+  hasFrom: cached ? cached.hasFrom : true,
 });
 
 // 是否展示可点击提示（仅首屏为占位文案时提示"点击换一句"）
@@ -61,8 +65,9 @@ const getHitokotoData = async () => {
   try {
     const result = await getHitokoto();
     hitokotoData.text = result.hitokoto;
-    hitokotoData.from = result.from;
-    writeCache({ text: result.hitokoto, from: result.from });
+    hitokotoData.from = result.from || "";
+    hitokotoData.hasFrom = result.hasFrom !== false && !!result.from;
+    writeCache({ text: result.hitokoto, from: hitokotoData.from, hasFrom: hitokotoData.hasFrom });
   } catch (error) {
     // 首屏且无缓存时才提示，点击刷新失败不打扰
     if (!readCache()) {

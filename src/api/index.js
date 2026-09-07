@@ -92,13 +92,33 @@ export const getPlayerList = async (server, type, id) => {
 
 /**
  * 获取一言数据
+ * 主用 uapis 语料（句子较新，但无出处字段）；
+ * 失败/超时时降级到 hitokoto 官方接口（含出处）
  */
 export const getHitokoto = async () => {
-  const res = await fetch("https://v1.hitokoto.cn");
-  if (!res.ok) {
-    throw new Error(`一言接口请求失败，状态码：${res.status}`);
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch("https://uapis.cn/api/v1/saying", {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`一言接口请求失败，状态码：${res.status}`);
+    const data = await res.json();
+    if (!data || typeof data.text !== "string" || !data.text.trim()) {
+      throw new Error("一言接口返回数据为空");
+    }
+    // uapis 无出处：from 置空，界面隐藏出处行
+    return { hitokoto: data.text.trim(), from: "", hasFrom: false };
+  } catch {
+    // 兜底：hitokoto 官方接口（显示出处）
+    const res = await fetch("https://v1.hitokoto.cn");
+    if (!res.ok) {
+      throw new Error(`一言接口请求失败，状态码：${res.status}`);
+    }
+    const result = await res.json();
+    return { hitokoto: result.hitokoto, from: result.from, hasFrom: true };
   }
-  return await res.json();
 };
 
 /**
