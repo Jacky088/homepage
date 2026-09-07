@@ -83,6 +83,7 @@ const props = defineProps({
 const listHeight = computed(() => {
   return props.listMaxHeight + "px";
 });
+void listHeight;
 
 // 初始化播放器
 onMounted(() => {
@@ -202,78 +203,15 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList, player });
 </script>
 
 <style lang="scss" scoped>
+// 音乐列表面板内仅使用 APlayer 的列表本体（头部由 Music.vue 自绘，控制器由面板自绘）
 .aplayer {
   width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
   font-family: "HarmonyOS_Regular", sans-serif !important;
   :deep(.aplayer-body) {
-    background-color: transparent;
-    border-radius: 16px 16px 0 0;
-    .aplayer-pic {
-      display: none;
-    }
-    .aplayer-info {
-      margin-left: 0;
-      background-color: #ffffff40;
-      border-color: transparent !important;
-      border-radius: 16px;
-      .aplayer-music {
-        flex-grow: initial;
-        margin-bottom: 2px;
-        overflow: hidden;
-        .aplayer-title {
-          font-size: 16px;
-          margin-right: 6px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .aplayer-author {
-          color: #efefef;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-      }
-      .aplayer-lrc {
-        text-align: left;
-        margin: 7px 0 6px 6px;
-        height: 44px;
-        mask: linear-gradient(
-          #fff 15%,
-          #fff 85%,
-          hsla(0deg, 0%, 100%, 0.6) 90%,
-          hsla(0deg, 0%, 100%, 0)
-        );
-        -webkit-mask: linear-gradient(
-          #fff 15%,
-          #fff 85%,
-          hsla(0deg, 0%, 100%, 0.6) 90%,
-          hsla(0deg, 0%, 100%, 0)
-        );
-        &::before,
-        &::after {
-          display: none;
-        }
-        p {
-          color: #efefef;
-        }
-        .aplayer-lrc-current {
-          font-size: 0.95rem;
-          margin-bottom: 4px !important;
-        }
-      }
-      .aplayer-controller {
-        display: none;
-      }
-    }
+    display: none;
   }
   :deep(.aplayer-list) {
-    margin-top: 6px;
-    height: v-bind(listHeight);
     background-color: transparent;
-    border-radius: 0 0 16px 16px;
     ol {
       &::-webkit-scrollbar-track {
         background-color: transparent;
@@ -282,22 +220,10 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList, player });
         border-color: transparent;
         overflow: hidden;
         &.aplayer-list-light {
-          background: #ffffff40;
-          border-radius: 8px;
+          background: transparent;
         }
         &:hover {
-          background: #ffffff26 !important;
-          border-radius: 8px !important;
-        }
-        .aplayer-list-index,
-        .aplayer-list-author {
-          color: #efefef;
-        }
-        .aplayer-list-title,
-        .aplayer-list-author {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          background: transparent !important;
         }
       }
     }
