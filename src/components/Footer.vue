@@ -1,46 +1,44 @@
 <template>
   <footer id="footer" :class="store.footerBlur ? 'blur' : null">
-    <Transition name="fade" mode="out-in">
-      <div v-if="!store.playerState || !store.playerLrcShow" class="power">
-        <span>
-          <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
-          &copy;
-          <span v-if="startYear < fullYear"
-            class="site-start">
-            {{ startYear }}
-            -
-          </span>
-          {{ fullYear }}
-          <a :href="siteUrl">{{ siteAuthor }}</a>
+    <!-- 不用 Transition：动画时钟被节流时（后台标签页/省电模式）transitionend 丢失
+         会导致 out-in 永久卡死、歌词不再更新。改用 :key 重建 + CSS fade 入场动画 -->
+    <div v-if="!store.playerState || !store.playerLrcShow" class="power">
+      <span>
+        <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
+        &copy;
+        <span v-if="startYear < fullYear"
+          class="site-start">
+          {{ startYear }}
+          -
         </span>
-        <!-- 以下信息请不要修改哦 -->
-   
-        <!-- 站点备案 -->
-        <span v-if="siteIcp">
-          &amp;
-          <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
-            {{ siteIcp }}
-          </a>
+        {{ fullYear }}
+        <a :href="siteUrl">{{ siteAuthor }}</a>
+      </span>
+      <!-- 以下信息请不要修改哦 -->
+ 
+      <!-- 站点备案 -->
+      <span v-if="siteIcp">
+        &amp;
+        <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
+          {{ siteIcp }}
+        </a>
+      </span>
+    </div>
+    <div v-else class="lrc">
+      <div class="lrc-all" :key="store.getPlayerLrc">
+        <music-one theme="filled" size="18" fill="#efefef" />
+        <!-- 歌词超宽时自动跑马灯，速度按歌词时长/文本长度动态计算 -->
+        <span class="lrc-clip">
+          <span
+            ref="lrcTextRef"
+            class="lrc-text"
+            :class="{ marquee: isMarquee }"
+            :style="marqueeStyle"
+          >{{ store.getPlayerLrc }}</span>
         </span>
+        <music-one theme="filled" size="18" fill="#efefef" />
       </div>
-      <div v-else class="lrc">
-        <Transition name="fade" mode="out-in">
-          <div class="lrc-all" :key="store.getPlayerLrc">
-            <music-one theme="filled" size="18" fill="#efefef" />
-            <!-- 歌词超宽时自动跑马灯，速度按歌词时长/文本长度动态计算 -->
-            <span class="lrc-clip">
-              <span
-                ref="lrcTextRef"
-                class="lrc-text"
-                :class="{ marquee: isMarquee }"
-                :style="marqueeStyle"
-              >{{ store.getPlayerLrc }}</span>
-            </span>
-            <music-one theme="filled" size="18" fill="#efefef" />
-          </div>
-        </Transition>
-      </div>
-    </Transition>
+    </div>
   </footer>
 </template>
 
@@ -78,7 +76,15 @@ const marqueeDistance = ref(0); // 滚动距离 px
 
 // 测量当前歌词是否超宽，超宽则激活跑马灯并按内容长度计算速度
 const measureMarquee = async () => {
-  await nextTick();
+  const target = store.getPlayerLrc;
+  // 歌词切换时新元素由 :key 重建，等待文本真正更新后再测量，
+  // 避免测量到尚未替换的旧歌词宽度
+  for (let i = 0; i < 20; i++) {
+    await nextTick();
+    const el = lrcTextRef.value;
+    if (el && el.textContent === target) break;
+    await new Promise((r) => setTimeout(r, 50));
+  }
   const el = lrcTextRef.value;
   if (!el) return;
   const clip = el.parentElement;
@@ -134,6 +140,9 @@ const marqueeStyle = computed(() => {
   .power {
     animation: fade 0.3s;
   }
+  .lrc-all {
+    animation: fade 0.3s;
+  }
   .lrc {
     padding: 0 20px;
     display: flex;
@@ -178,10 +187,6 @@ const marqueeStyle = computed(() => {
     backdrop-filter: blur(10px);
     background: rgb(0 0 0 / 25%);
     font-size: 16px;
-  }
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity 0.15s ease-in-out;
   }
 
   // 歌词跑马灯：起点稍作停顿感（首程从 0 滚到 -distance，alternate 自动回程）
