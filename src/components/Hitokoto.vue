@@ -4,13 +4,12 @@
     v-show="!store.musicOpenState"
     @click.stop
   >
-    <!-- 一言内容 -->
-    <Transition name="el-fade-in-linear" mode="out-in">
-      <div :key="hitokotoData.text" class="content" @click="updateHitokoto" :title="clickable ? '点击换一句' : null">
-        <span class="text">{{ hitokotoData.text }}</span>
-        <span v-if="hitokotoData.hasFrom" class="from">-「&nbsp;{{ hitokotoData.from }}&nbsp;」</span>
-      </div>
-    </Transition>
+    <!-- 一言内容（不用 Transition：动画时钟被节流时 out-in 会永久卡死，
+         与页脚歌词同样的问题；改用 :key 重建 + CSS fade 入场动画） -->
+    <div :key="hitokotoData.text" class="content" @click="updateHitokoto" :title="clickable ? '点击换一句' : null">
+      <span class="text">{{ hitokotoData.text }}</span>
+      <span v-if="hitokotoData.hasFrom" class="from">-「&nbsp;{{ hitokotoData.from }}&nbsp;」</span>
+    </div>
   </div>
 </template>
 
@@ -120,7 +119,8 @@ onMounted(() => {
     // 固定最小高度，切换一言时容器高度变化更平滑
     min-height: 4.2em;
     justify-content: center;
-    transition: opacity 0.2s ease;
+    // :key 重建时的入场动画（替代 Transition，不依赖结束事件）
+    animation: fade 0.3s;
 
     // 可点击暗示：占位文案时轻微呼吸动画引导点击
     &.is-placeholder {
