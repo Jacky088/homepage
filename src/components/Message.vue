@@ -1,31 +1,14 @@
 <template>
   <!-- 基本信息 -->
   <div class="message">
-    <!-- Logo -->
-    <div class="logo">
+    <!-- Logo（点击打开时光胶囊彩蛋） -->
+    <div class="logo" @click="store.capsuleOpenState = !store.capsuleOpenState">
       <img class="logo-img" :src="siteLogo" alt="logo" />
       <div :class="{ name: true, 'text-hidden': true, long: siteUrl[0].length >= 6 }">
         <span class="bg">{{ siteUrl[0] }}</span>
         <span class="sm">.{{ siteUrl[1] }}</span>
       </div>
     </div>
-    <!-- 简介 (已隐藏) -->
-    <!-- <div class="description" @click="changeBox">
-      <div class="content">
-        <Icon size="16">
-          <QuoteLeft />
-        </Icon>
-        <Transition name="fade" mode="out-in">
-          <div :key="descriptionText.hello + descriptionText.text" class="text">
-            <p>{{ descriptionText.hello }}</p>
-            <p>{{ descriptionText.text }}</p>
-          </div>
-        </Transition>
-        <Icon size="16">
-          <QuoteRight />
-        </Icon>
-      </div>
-    </div> -->
   </div>
 </template>
 
@@ -59,10 +42,21 @@ const siteUrl = computed(() => {
     flex-direction: row;
     align-items: center;
     animation: fade 0.5s;
+    // 彩蛋入口：可点击，悬停时 Logo 轻微放大提示
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
     .logo-img {
       border-radius: 50%;
       width: 52px;
       height: 52px;
+      transition: transform 0.3s;
+    }
+    &:hover .logo-img {
+      transform: scale(1.06);
+    }
+    &:active .logo-img {
+      transform: scale(0.98);
     }
     .name {
       padding-left: 12px;
@@ -94,39 +88,6 @@ const siteUrl = computed(() => {
           font-size: 0.9rem;
         }
       }
-    }
-  }
-
-  .description {
-    padding: 1rem;
-    margin-top: 1rem;
-    max-width: 460px;
-    animation: fade 0.5s;
-
-    .content {
-      display: flex;
-      justify-content: space-between;
-
-      .text {
-        margin: 0.75rem 1rem;
-        line-height: 2rem;
-        margin-right: auto;
-        transition: opacity 0.2s;
-
-        p {
-          &:nth-of-type(1) {
-            font-family: "Pacifico-Regular";
-          }
-        }
-      }
-
-      .xicon:nth-of-type(2) {
-        align-self: flex-end;
-      }
-    }
-    @media (max-width: 720px) {
-      max-width: 100%;
-      pointer-events: none;
     }
   }
 }

@@ -280,3 +280,44 @@ scrollbar-thumb {
   border-radius: 10px;
   background-color: #eeeeee;
 }
+
+// ========== 液态玻璃材质（音乐面板 / 播放列表 / 时光胶囊等弹层共用） ==========
+.music-glass {
+  position: relative;
+  background:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 14%) 0%,
+      rgb(255 255 255 / 5%) 36%,
+      rgb(0 0 0 / 24%) 100%
+    ),
+    rgb(14 16 22 / 38%);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 16%);
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 45%),
+    0 4px 16px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 22%),
+    inset 0 -1px 0 rgb(255 255 255 / 4%);
+
+  // 顶部弧面高光
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(120% 55% at 50% 0%, rgb(255 255 255 / 9%) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  // 内容置于高光之上
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+  > .panel-close,
+  > .list-close {
+    position: absolute;
+  }
+}
