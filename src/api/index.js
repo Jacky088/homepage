@@ -92,12 +92,13 @@ export const getPlayerList = async (server, type, id) => {
 
 /**
  * 获取一言数据
- * 主用 uapis 语料（句子较新，但无出处字段）；
- * 失败/超时时降级到 hitokoto 官方接口（含出处）。
- * 注意：uapis 在部分网络环境（代理/运营商）下 fetch 可能被拦，
- * 此时自动走兜底，保证任何环境都能显示一言。
+ * 三级降级链：
+ * 1. uapis 语料（句子最新，无出处字段；部分网络环境 fetch 会被 CDN 拦截）
+ * 2. hitokoto 文学分类（ACAO:* 全网可达，语料较新；加防缓存参数避免 CDN 返回重复句）
+ * 3. hitokoto 默认分类（终极兜底，语料偏经典）
  */
 export const getHitokoto = async () => {
+  // 1. uapis：无出处，from 置空，界面隐藏出处行
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
@@ -111,16 +112,27 @@ export const getHitokoto = async () => {
     if (!data || typeof data.text !== "string" || !data.text.trim()) {
       throw new Error("一言接口返回数据为空");
     }
-    // uapis 无出处：from 置空，界面隐藏出处行
     return { hitokoto: data.text.trim(), from: "", hasFrom: false };
   } catch {
-    // 兜底：hitokoto 官方接口（显示出处）
-    const res = await fetch("https://v1.hitokoto.cn");
-    if (!res.ok) {
-      throw new Error(`一言接口请求失败，状态码：${res.status}`);
+    // 2. hitokoto 文学分类：语料较新（2022-2026），显示出处
+    try {
+      const res = await fetch(
+        `https://v1.hitokoto.cn/?c=d&max_length=40&_n=${Math.random().toString(36).slice(2)}`,
+        { cache: "no-store" },
+      );
+      if (!res.ok) throw new Error(`一言接口请求失败，状态码：${res.status}`);
+      const result = await res.json();
+      if (!result.hitokoto) throw new Error("一言接口返回数据为空");
+      return { hitokoto: result.hitokoto, from: result.from, hasFrom: true };
+    } catch {
+      // 3. hitokoto 默认：终极兜底
+      const res = await fetch("https://v1.hitokoto.cn");
+      if (!res.ok) {
+        throw new Error(`一言接口请求失败，状态码：${res.status}`);
+      }
+      const result = await res.json();
+      return { hitokoto: result.hitokoto, from: result.from, hasFrom: true };
     }
-    const result = await res.json();
-    return { hitokoto: result.hitokoto, from: result.from, hasFrom: true };
   }
 };
 
