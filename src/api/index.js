@@ -93,7 +93,9 @@ export const getPlayerList = async (server, type, id) => {
 /**
  * 获取一言数据
  * 主用 uapis 语料（句子较新，但无出处字段）；
- * 失败/超时时降级到 hitokoto 官方接口（含出处）
+ * 失败/超时时降级到 hitokoto 官方接口（含出处）。
+ * 注意：uapis 在部分网络环境（代理/运营商）下 fetch 可能被拦，
+ * 此时自动走兜底，保证任何环境都能显示一言。
  */
 export const getHitokoto = async () => {
   try {
@@ -101,6 +103,7 @@ export const getHitokoto = async () => {
     const timer = setTimeout(() => controller.abort(), 5000);
     const res = await fetch("https://uapis.cn/api/v1/saying", {
       signal: controller.signal,
+      referrerPolicy: "no-referrer",
     });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`一言接口请求失败，状态码：${res.status}`);
