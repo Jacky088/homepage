@@ -47,8 +47,9 @@
           />
         </svg>
       </a>
-      <!-- 音乐播放器 -->
+      <!-- 音乐播放器（桌面端由右下角迷你播放器承担入口，仅移动端保留此图标） -->
       <a
+        class="music-icon"
         style="cursor: pointer"
         @click="handleMusicClick"
         @mouseenter="socialTip = '来点music听听？'"
@@ -152,6 +153,14 @@ const toggleBackground = () => {
   }
   @media (max-width: 720px) {
     justify-content: center;
+  }
+
+  // 桌面端隐藏音乐图标（入口改为右下角迷你播放器），移动端保留。
+  // 用 a.music-icon 提升特异性，否则被 .social .link a 的 display:inherit 覆盖
+  a.music-icon {
+    @media (min-width: 721px) {
+      display: none;
+    }
   }
 }
 </style>
