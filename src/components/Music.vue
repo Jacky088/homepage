@@ -368,10 +368,13 @@ const showMiniPlayer = computed(
 // 迷你播放器悬停展开状态（桌面端悬停展开成胶囊，移开收回图标）。
 // 用 pointerenter/pointerleave 而非 mouseenter/mouseleave：PointerEvent 才带
 // pointerType，可区分真实鼠标与触摸 tap 合成的兼容事件——移动端 tap 会先合成
-// mouseenter，若不区分指针类型会导致点击图标误触播放/暂停而非打开面板
+// mouseenter，若不区分指针类型会导致点击图标误触播放/暂停而非打开面板。
+// 窄视口（≤720px，与样式断点一致）下禁用悬停展开：桌面浏览器缩窄窗口时
+// pointerType 仍是 mouse，需按视口宽度兜底，移动端只保留点击打开面板
 const miniHover = ref(false);
+const isMobileViewport = () => window.matchMedia("(max-width: 720px)").matches;
 const onMiniEnter = (e) => {
-  if (e.pointerType === "mouse") miniHover.value = true;
+  if (e.pointerType === "mouse" && !isMobileViewport()) miniHover.value = true;
 };
 const onMiniLeave = (e) => {
   if (e.pointerType === "mouse") miniHover.value = false;
