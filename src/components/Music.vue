@@ -113,11 +113,19 @@
     </Transition>
   </Teleport>
 
-  <!-- 桌面端迷你播放器：右下角常驻胶囊，点击打开播放面板。
-       面板打开 / 壁纸展示 / 设置页时隐藏，移动端沿用底栏入口（CSS 隐藏） -->
+  <!-- 迷你播放器：右下角悬停展开式。收起态为 44px 音乐图标（与壁纸按钮组成工具列），
+       桌面端悬停时向左展开成带封面/歌名/播放键的胶囊，移开收回。
+       点击图标或胶囊主体打开播放面板，播放键直接播放/暂停。
+       面板打开 / 壁纸展示 / 设置页时隐藏（与工具列同步） -->
   <Teleport to="body">
-    <div v-show="showMiniPlayer" class="mini-player music-glass" @click="openPanel">
-      <!-- 小唱片：播放时旋转 -->
+    <div
+      v-show="showMiniPlayer"
+      :class="['mini-player', 'music-glass', { expanded: miniHover }]"
+      @pointerenter="onMiniEnter"
+      @pointerleave="onMiniLeave"
+      @click="openPanel"
+    >
+      <!-- 小唱片：播放时旋转（展开态显示） -->
       <div :class="['mini-disc', { spinning: store.playerState }]">
         <img
           v-if="coverUrl"
@@ -135,15 +143,27 @@
         <!-- 玻璃高光 -->
         <div class="mini-disc-sheen"></div>
       </div>
-      <!-- 歌曲信息 -->
+      <!-- 歌曲信息（展开态显示） -->
       <div class="mini-info">
         <span class="mini-name text-hidden">{{ store.getPlayerData.name || "未播放音乐" }}</span>
         <span class="mini-artist text-hidden">{{ store.getPlayerData.artist || "打开播放面板" }}</span>
       </div>
-      <!-- 播放/暂停 -->
-      <div class="mini-play" :title="store.playerState ? '暂停' : '播放'" @click.stop="changePlayState">
-        <play-one v-if="!store.playerState" theme="filled" size="20" fill="#fff" />
-        <pause v-else theme="filled" size="20" fill="#fff" />
+      <!-- 右侧圆形按钮：收起态为音乐图标，展开态为播放/暂停 -->
+      <div
+        class="mini-toggle"
+        :title="miniHover ? (store.playerState ? '暂停' : '播放') : '来点music听听？'"
+        @click.stop="miniHover ? changePlayState() : openPanel()"
+      >
+        <!-- 收起态：音乐图标 -->
+        <svg v-if="!miniHover" class="toggle-icon" viewBox="0 0 24 24" width="20" height="20">
+          <circle cx="12" cy="12" r="12" fill="#ffffff" />
+          <path d="M10 7.5v6.17a2.5 2.5 0 1 0 1.5 2.33V9.5l4-1v4.67a2.5 2.5 0 1 0 1.5 2.33V7l-7 1.5z" fill="#333" />
+        </svg>
+        <!-- 展开态：播放/暂停 -->
+        <template v-else>
+          <play-one v-if="!store.playerState" theme="filled" size="20" fill="#fff" />
+          <pause v-else theme="filled" size="20" fill="#fff" />
+        </template>
       </div>
     </div>
   </Teleport>
@@ -340,10 +360,22 @@ const changePlayState = () => {
   playerRef.value.playToggle();
 };
 
-// 迷你播放器：面板打开 / 壁纸展示 / 设置页时隐藏
+// 迷你播放器：面板打开 / 壁纸展示 / 设置页时隐藏（与右下角浮动工具列同步）
 const showMiniPlayer = computed(
   () => store.musicIsOk && !store.musicOpenState && !store.backgroundShow && !store.setOpenState,
 );
+
+// 迷你播放器悬停展开状态（桌面端悬停展开成胶囊，移开收回图标）。
+// 用 pointerenter/pointerleave 而非 mouseenter/mouseleave：PointerEvent 才带
+// pointerType，可区分真实鼠标与触摸 tap 合成的兼容事件——移动端 tap 会先合成
+// mouseenter，若不区分指针类型会导致点击图标误触播放/暂停而非打开面板
+const miniHover = ref(false);
+const onMiniEnter = (e) => {
+  if (e.pointerType === "mouse") miniHover.value = true;
+};
+const onMiniLeave = (e) => {
+  if (e.pointerType === "mouse") miniHover.value = false;
+};
 
 // 点击迷你播放器打开播放面板
 const openPanel = () => {
@@ -982,24 +1014,36 @@ watch(
   }
 }
 
-// ========== 桌面端迷你播放器（右下角常驻胶囊） ==========
+// ========== 迷你播放器（右下角悬停展开式：收起态为音乐图标，悬停展开成胶囊） ==========
 .mini-player {
   position: fixed;
   right: 24px;
-  bottom: 62px; // 避开底栏（Footer 高 46px + 间距）
+  bottom: 62px; // 与壁纸按钮同列（工具列位置），收起态即 44px 圆形图标
   z-index: 20; // 低于音乐面板遮罩(50)，高于底栏(1)
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 228px;
-  padding: 8px 12px 8px 8px;
-  border-radius: 24px;
+  width: 44px; // 收起态：与壁纸按钮同尺寸的圆形图标
+  height: 44px;
+  padding: 0;
+  border-radius: 22px;
+  overflow: hidden; // 收起态裁掉内部内容，展开时随宽度过渡露出
   cursor: pointer;
   user-select: none;
   animation: fade 0.4s;
   transition:
+    width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    border-radius 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+    padding 0.35s cubic-bezier(0.33, 1, 0.68, 1),
     transform 0.3s cubic-bezier(0.33, 1, 0.68, 1),
     box-shadow 0.3s;
+
+  // 悬停展开成胶囊（右边缘固定，向左生长）
+  &.expanded {
+    width: 228px;
+    padding: 8px 6px 8px 8px;
+    border-radius: 24px;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -1008,7 +1052,7 @@ watch(
     transform: translateY(0) scale(0.98);
   }
 
-  // 小唱片
+  // 小唱片（展开态显示）
   .mini-disc {
     position: relative;
     flex-shrink: 0;
@@ -1022,6 +1066,10 @@ watch(
       repeating-radial-gradient(circle at center, rgb(255 255 255 / 6%) 0 1px, transparent 1px 3px),
       linear-gradient(135deg, rgb(255 255 255 / 16%) 0%, rgb(255 255 255 / 4%) 100%);
     border: 1.5px solid rgb(255 255 255 / 20%);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+    pointer-events: none;
 
     &.spinning {
       animation: disc-spin 8s linear infinite;
@@ -1053,7 +1101,7 @@ watch(
     }
   }
 
-  // 歌曲信息
+  // 歌曲信息（展开态显示）
   .mini-info {
     flex: 1;
     min-width: 0; // 允许文字省略
@@ -1061,6 +1109,10 @@ watch(
     flex-direction: column;
     gap: 2px;
     line-height: 1.2;
+    opacity: 0;
+    transform: translateX(12px);
+    transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+    pointer-events: none;
 
     .mini-name {
       font-size: 0.82rem;
@@ -1074,14 +1126,18 @@ watch(
     }
   }
 
-  // 播放/暂停按钮
-  .mini-play {
+  // 右侧圆形按钮：收起态为音乐图标，展开态为播放/暂停
+  .mini-toggle {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: rgb(255 255 255 / 10%);
     border: 1px solid rgb(255 255 255 / 16%);
@@ -1093,16 +1149,38 @@ watch(
 
     &:hover {
       background: rgb(255 255 255 / 20%);
-      transform: scale(1.08);
+      transform: translateY(-50%) scale(1.08);
     }
     &:active {
-      transform: scale(0.92);
+      transform: translateY(-50%) scale(0.92);
     }
   }
 
-  // 移动端隐藏：沿用底栏音乐小图标入口，避免遮挡底栏歌词与社交图标
+  // 展开态：唱片与歌曲信息滑入
+  &.expanded {
+    .mini-disc {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+    .mini-info {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+  }
+
+  // 移动端：无悬停，保持收起态图标，点击直接打开面板
   @media (max-width: 720px) {
-    display: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 22px;
+
+    .mini-disc,
+    .mini-info {
+      display: none;
+    }
   }
 }
 </style>

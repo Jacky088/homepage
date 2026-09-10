@@ -17,6 +17,8 @@
       </div>
       <!-- 顶栏天气徽章（显隐由组件内部响应 store 状态，避免多根组件上的运行时指令警告） -->
       <WeatherBadge />
+      <!-- 右下角浮动工具列：壁纸切换 + 音乐入口（显隐由组件内部响应 store 状态） -->
+      <FloatTools />
       <!-- 时光胶囊彩蛋（点击左上角 Logo 触发） -->
       <TimeCapsule />
       <!-- 移动端菜单按钮 -->
@@ -53,6 +55,7 @@ import Footer from "@/components/Footer.vue";
 import SocialLinks from "@/components/SocialLinks.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
 import WeatherBadge from "@/components/WeatherBadge.vue";
+import FloatTools from "@/components/FloatTools.vue";
 import TimeCapsule from "@/components/TimeCapsule.vue";
 import cursorInit from "@/utils/cursor.js";
 import config from "@/../package.json";
