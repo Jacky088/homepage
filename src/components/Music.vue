@@ -154,10 +154,9 @@
         :title="miniHover ? (store.playerState ? '暂停' : '播放') : '来点music听听？'"
         @click.stop="miniHover ? changePlayState() : openPanel()"
       >
-        <!-- 收起态：音乐图标 -->
-        <svg v-if="!miniHover" class="toggle-icon" viewBox="0 0 24 24" width="20" height="20">
-          <circle cx="12" cy="12" r="12" fill="#ffffff" />
-          <path d="M10 7.5v6.17a2.5 2.5 0 1 0 1.5 2.33V9.5l4-1v4.67a2.5 2.5 0 1 0 1.5 2.33V7l-7 1.5z" fill="#333" />
+        <!-- 收起态：纯白音符图标（与壁纸按钮同构，无底色轮廓） -->
+        <svg v-if="!miniHover" class="toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="#ffffff">
+          <path d="M9 18.5V5.5l11-2v12.4a3 3 0 1 1-1.5-2.6V6.3l-8 1.5v10.7a3 3 0 1 1-1.5-2.6z" />
         </svg>
         <!-- 展开态：播放/暂停 -->
         <template v-else>
@@ -1021,11 +1020,11 @@ watch(
 .mini-player {
   position: fixed;
   right: 24px;
-  bottom: 62px; // 与壁纸按钮同列（工具列位置），收起态即 44px 圆形图标
+  bottom: 110px; // 壁纸按钮下方 10px（壁纸按钮 bottom 164px - 44px - 10px），高于社交栏顶部
   z-index: 20; // 低于音乐面板遮罩(50)，高于底栏(1)
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 44px; // 收起态：与壁纸按钮同尺寸的圆形图标
   height: 44px;
   padding: 0;
@@ -1043,7 +1042,7 @@ watch(
 
   // 悬停展开成胶囊（右边缘固定，向左生长）
   &.expanded {
-    width: 228px;
+    width: 190px;
     padding: 8px 6px 8px 8px;
     border-radius: 24px;
   }
@@ -1129,7 +1128,7 @@ watch(
     }
   }
 
-  // 右侧圆形按钮：收起态为音乐图标，展开态为播放/暂停
+  // 右侧圆形按钮：收起态为纯白音符（无底色，与壁纸按钮同构），展开态为播放/暂停圆钮
   .mini-toggle {
     position: absolute;
     right: 5px;
@@ -1142,12 +1141,18 @@ watch(
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: rgb(255 255 255 / 10%);
-    border: 1px solid rgb(255 255 255 / 16%);
-    transition: background 0.2s, transform 0.2s;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
 
     .i-icon {
       display: flex;
+    }
+
+    // 展开态显示圆钮底（播放/暂停需要可见的按钮轮廓）
+    .expanded & {
+      background: rgb(255 255 255 / 10%);
+      border-color: rgb(255 255 255 / 16%);
     }
 
     &:hover {
@@ -1175,14 +1180,27 @@ watch(
 
   // 移动端：无悬停，保持收起态图标，点击直接打开面板
   @media (max-width: 720px) {
-    width: 44px;
-    height: 44px;
+    right: 27px; // (44 - 38) / 2，与壁纸按钮同轴
+    bottom: 104px; // 壁纸按钮下方 10px（壁纸按钮 bottom 158px - 38px - 10px）
+    width: 38px;
+    height: 38px;
     padding: 0;
-    border-radius: 22px;
+    border-radius: 19px;
 
     .mini-disc,
     .mini-info {
       display: none;
+    }
+
+    .mini-toggle {
+      width: 38px;
+      height: 38px;
+      right: 0;
+
+      .toggle-icon {
+        width: 18px;
+        height: 18px;
+      }
     }
   }
 }
