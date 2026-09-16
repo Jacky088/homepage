@@ -144,6 +144,7 @@ pnpm preview
 | --- | --- | --- |
 | 本地开发（`pnpm dev`） | Vite dev server 代理 | `.env` 中的 `UAPI_KEY` |
 | Vercel 部署 | `api/weather.js`（Serverless Function） | 项目 Settings → Environment Variables 中的 `UAPI_KEY` |
+| EdgeOne Pages 部署 | `functions/uapi/weather.js`（边缘函数） | 项目设置 → 环境变量中的 `UAPI_KEY` |
 | 自有服务器 / Docker | 需自行反代 | 见下方「其他部署方式」 |
 
 `UAPI_KEY` 没有 `VITE_` 前缀，因此**不会被打进前端 JS**。
@@ -155,8 +156,11 @@ uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**
 > ⚠️ 不要改用 Vercel 的 `x-vercel-ip-city` 请求头，它给的是英文城市名，而 uapis 对英文名匹配不可靠（实测 `Wuxi` 命中「重庆巫溪县」、`Suzhou` 命中「安徽宿州市」），会静默返回**错误城市**的天气，比失败更难发现。
 
 **其他部署方式：**
-- **Docker / nginx**：**不能只做简单反代**——反代之后 uapis 看到的仍是服务器出口 IP，会踩上面同一个坑。需按同样逻辑先反查访客 IP 归属地再查天气；更省事的做法是把 `VITE_UAPI_BASE` 指向一个已部署好的代理（Vercel 函数 / Cloudflare Worker）。
+- **EdgeOne Pages**：函数源码放在 `functions/` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js`，对应 `/uapi/weather`，前端无需改任何配置；只需在项目设置里配好 `UAPI_KEY`，并确认项目启用了 Functions。
+- **Docker / nginx**：**不能只做简单反代**——反代之后 uapis 看到的仍是服务器出口 IP，会踩上面同一个坑。需按同样逻辑先反查访客 IP 归属地再查天气；更省事的做法是把 `VITE_UAPI_BASE` 指向一个已部署好的代理（Vercel 函数 / EdgeOne 边缘函数 / Cloudflare Worker）。
 - **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的结构实现同协议的 `/weather` 接口（同样需要按访客 IP 反查城市），再配置 `VITE_UAPI_BASE`；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
+
+> ⚠️ **各平台的配置互不通用**：Vercel 读的是 `api/` + `vercel.json`，EdgeOne Pages 读的是 `functions/` + `edgeone.json`。只带其中一份配置部署到另一个平台时，`/uapi/weather` 就没有任何处理器，请求会落到静态资源并 404，天气直接失败（这正是首次部署到 EdgeOne 时报「天气定位失败」的原因）。
 
 **说明：**
 - 天气定位精度为**城市级**（按 IP 自动识别当前所在城市）。
@@ -200,7 +204,15 @@ Vercel 会自动把仓库根目录 `api/` 下的文件部署为 Serverless Funct
 2. 可选：添加 `ALLOWED_ORIGIN = https://你的域名`，防止函数被他人盗刷；
 3. 无需配置 `VITE_UAPI_BASE`（前端默认走 `/uapi`）。
 
-> Cloudflare Pages / EdgeOne Pages 不支持 Vercel 风格的 `api/` 函数，需自备代理（Cloudflare Worker / 边缘函数）并把 `VITE_UAPI_BASE` 指向它。
+**天气 Key 在 EdgeOne Pages 上的配置：**
+
+EdgeOne Pages 用的是 `/functions` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js` → 路由 `/uapi/weather`，与前端默认配置一致。因此只需要：
+
+1. 在 EdgeOne Pages 项目设置 → 环境变量中添加 `UAPI_KEY`（**不要加 `VITE_` 前缀**）；
+2. 可选：添加 `ALLOWED_ORIGIN = https://你的域名`；
+3. 确认项目已启用 Functions（`functions/` 目录会被自动识别），推送后重新部署。
+
+> Vercel 与 EdgeOne 的配置互不通用：`api/` + `vercel.json` 只对 Vercel 生效，`functions/` + `edgeone.json` 只对 EdgeOne 生效。只带一份配置部署到另一个平台时，天气接口会是 404。Cloudflare Pages 两者都不支持，需自备 Worker 代理并把 `VITE_UAPI_BASE` 指向它。
 
 > 平台控制台的变量优先级高于 `.env` 文件；Node.js 版本无需手动设置（`engines` 字段已声明，Vercel 会自动选用 Node 22+）。
 
@@ -242,6 +254,8 @@ docker-compose up -d   # 端口 12445
 ```
 api/
 └── weather.js      # 天气代理函数（Vercel Serverless Function，服务端注入 API Key）
+functions/uapi/
+└── weather.js      # 天气代理函数（EdgeOne Pages 边缘函数，路由 /uapi/weather）
 src/
 ├── api/            # 前端 API 接口
 ├── assets/         # 静态资源（链接配置 JSON）
