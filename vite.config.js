@@ -9,8 +9,11 @@ import Components from "unplugin-vue-components/vite";
 import viteCompression from "vite-plugin-compression";
 
 // https://vitejs.dev/config/
-export default ({ mode }) =>
-  defineConfig({
+export default ({ mode }) => {
+  // 第三个参数传 "" 才能读到非 VITE_ 前缀的变量（例如服务端专用的 UAPI_KEY）
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return defineConfig({
     plugins: [
       vue(),
       AutoImport({
@@ -60,9 +63,9 @@ export default ({ mode }) =>
           ],
         },
         manifest: {
-          name: loadEnv(mode, process.cwd()).VITE_SITE_NAME,
-          short_name: loadEnv(mode, process.cwd()).VITE_SITE_NAME,
-          description: loadEnv(mode, process.cwd()).VITE_SITE_DES,
+          name: env.VITE_SITE_NAME,
+          short_name: env.VITE_SITE_NAME,
+          description: env.VITE_SITE_DES,
           display: "standalone",
           start_url: "/",
           theme_color: "#424242",
@@ -112,6 +115,14 @@ export default ({ mode }) =>
       port: "3000",
       open: true,
       proxy: {
+        // 天气代理：开发环境由 dev server 注入 X-API-Key，
+        // 前端不持有 Key，行为与线上（Vercel Function）保持一致
+        "/uapi/weather": {
+          target: "https://uapis.cn",
+          changeOrigin: true,
+          rewrite: () => "/api/v1/misc/weather",
+          headers: env.UAPI_KEY ? { "X-API-Key": env.UAPI_KEY } : {},
+        },
         '/api': {
           target: 'https://163api.mmcoo.de',
           changeOrigin: true,
@@ -162,3 +173,4 @@ export default ({ mode }) =>
       },
     },
   });
+};

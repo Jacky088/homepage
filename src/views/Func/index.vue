@@ -37,11 +37,9 @@
                   <span> {{ currentTime.hour }}:{{ currentTime.minute }}:{{ currentTime.second }}</span>
                 </div>
               </div>
-              <Weather />
             </div>
-            <div class="right-content-settings" v-else key="settings">
-              <Weather />
-            </div>
+            <!-- 该列已整体 display:none，原先挂载在此的 <Weather /> 会白白多发一次天气请求，故移除 -->
+            <div class="right-content-settings" v-else key="settings"></div>
           </Transition>
         </div>
       </el-col>
@@ -54,7 +52,6 @@ import { SettingTwo } from "@icon-park/vue-next";
 import { getCurrentTime } from "@/utils/getTime";
 import { mainStore } from "@/store";
 import Music from "@/components/Music.vue";
-import Weather from "@/components/Weather.vue";
 
 const store = mainStore();
 

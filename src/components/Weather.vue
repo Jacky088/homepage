@@ -44,10 +44,10 @@
 
 <script setup>
 import { reactive, onMounted, onBeforeUnmount, h, ref, watch, nextTick } from "vue";
-import { getAdcode, getWeather, getOtherWeather, getAdcodeByCity } from "@/api";
+import { getUapiWeather, getAdcode, getWeather, getOtherWeather, getAdcodeByCity } from "@/api";
 import { Error } from "@icon-park/vue-next";
 import { showMessage } from "@/utils/message.js";
-import { windDirZh } from "@/utils/weather.js";
+import { windDirZh, normalizeWindPower } from "@/utils/weather.js";
 import { mainStore } from "@/store";
 
 const store = mainStore();
@@ -222,9 +222,29 @@ const onError = (message) => {
   console.error(message);
 };
 
-// 获取天气数据
-const getWeatherData = async (cityName) => {
+/**
+ * 获取天气数据
+ * 降级链：uapis（主源，不传城市时按访客 IP 自动定位）→ 原高德 / wttr.in 方案
+ * @returns {Promise<boolean>} 是否成功获取到天气
+ */
+const getWeatherData = async (cityName, silent = false) => {
   try {
+    // 主源：uapis
+    try {
+      const data = await getUapiWeather(cityName);
+      weatherData.adCode.city = data.city || cityName;
+      weatherData.adCode.adcode = data.adcode || null;
+      weatherData.weather.weather = data.weather;
+      weatherData.weather.temperature = data.temperature;
+      weatherData.weather.winddirection = data.wind_direction || "未知";
+      weatherData.weather.windpower = normalizeWindPower(data.wind_power);
+
+      checkNeedScroll();
+      return true;
+    } catch (error) {
+      console.warn("uapis 天气获取失败，切换备用源：", error);
+    }
+
     if (!mainKey) {
       // 备用接口请求 (wttr.in)
       const result = await getOtherWeather(cityName);
@@ -291,9 +311,11 @@ const getWeatherData = async (cityName) => {
 
     // 数据更新后检查是否需要滚动
     checkNeedScroll();
+    return true;
   } catch (error) {
     console.error("天气信息获取失败:", error);
-    onError("天气信息获取失败");
+    if (!silent) onError("天气信息获取失败");
+    return false;
   }
 };
 
@@ -309,22 +331,19 @@ const saveCity = async () => {
   const oldCity = getCookie("weather_city") || "上海";
   
   showMessage.info("正在查询并保存天气信息...");
-  await getWeatherData(trimmedCity);
-  
-  // 检查是否获取成功
+  const ok = await getWeatherData(trimmedCity, true);
+
+  // 以数据源实际识别出的城市名为准保存（中英文输入均可，
+  // 如输入 Shanghai 会被归一化为「上海」），避免名称不一致被误判为失败
   const successCityName = weatherData.adCode.city;
-  if (successCityName && (
-      successCityName.toLowerCase() === trimmedCity.toLowerCase() ||
-      successCityName.includes(trimmedCity) ||
-      trimmedCity.includes(successCityName)
-  )) {
+  if (ok && successCityName) {
     // 成功，保存至 cookie，过期时间 30 天
     setCookie("weather_city", successCityName, 30);
     showMessage.success(`城市成功切换为：${successCityName}`);
     store.weatherOpenState = false; // 返回时间卡片显示
   } else {
     // 失败，回滚
-    await getWeatherData(oldCity);
+    await getWeatherData(oldCity, true);
     showMessage.error("获取该城市天气失败，已回退");
   }
 };

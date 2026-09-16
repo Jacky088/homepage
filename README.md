@@ -75,10 +75,10 @@ pnpm preview
 
 ## 配置说明
 
-项目通过 `VITE_` 开头的环境变量配置。`.env` 不在仓库中，配置方式按使用场景选择：
+项目通过环境变量配置，分两类：`VITE_` 开头的会**注入前端产物**，其余仅在**服务端**使用。`.env` 不在仓库中，配置方式按使用场景选择：
 
 - **本地开发 / 静态构建 / Docker**：复制 `.env.example` 为 `.env`，按需修改；
-- **托管平台**：在平台控制台添加环境变量（首选，改配置无需提交代码），或把 `.env` 提交进仓库（**切勿在其中存放密钥**）。
+- **托管平台**：在平台控制台添加环境变量（首选，改配置无需提交代码），或把 `.env` 提交进仓库（**切勿在其中存放密钥**）。注意：平台控制台里配置的**服务端变量**（如 `UAPI_KEY`）不会被静态构建读取，仅供 Serverless Function 使用，因此必须配在平台上。
 
 > **优先级提示**：若同一个变量在 `.env` 文件和云平台控制台**都配置了值**，以 **云平台环境变量** 为准。
 
@@ -95,8 +95,10 @@ pnpm preview
 | VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
 | VITE_SONG_TYPE | 播放类型 | playlist |
 | VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
-| VITE_WEATHER_KEY | 高德 Web 服务 Key（留空则用 IP 定位） | xxxxxxxx |
+| VITE_WEATHER_KEY | 高德 Web 服务 Key（可选，作为降级源） | xxxxxxxx |
 | VITE_AMAP_BASE | 高德 API 代理地址（可选，留空直连官方） | https://example.com/amap |
+| VITE_UAPI_BASE | 天气代理路径（前端使用，默认 `/uapi`） | /uapi |
+| UAPI_KEY | uapis 天气 API Key（**服务端**变量，**不要加 `VITE_` 前缀**） | uapi-xxxxxxxx |
 
 ### 自定义链接
 
@@ -124,30 +126,48 @@ pnpm preview
 
 顶栏右上角会展示当前城市及天气状况（图标 + 城市 + 天气 + 温度），点击可展开查看天气详情（风向、风力）。
 
-**定位逻辑（双路线）：**
+**数据来源（三级降级链）：**
 
-| 条件 | 定位方式 | 天气来源 |
+| 顺序 | 数据源 | 说明 |
 | --- | --- | --- |
-| 配置了 `VITE_WEATHER_KEY`（高德 key） | 高德 IP 定位 | 高德天气接口 |
-| `VITE_WEATHER_KEY` 为空（默认） | ipinfo.io / ipapi.co IP 定位 | wttr.in 备用接口 |
+| 1 | [uapis 天气](https://uapis.cn/docs/api-reference/get-misc-weather) | **主源**。不传城市时按访客 IP 自动定位，一次请求同时拿到城市与天气，国内 CDN 直连稳定 |
+| 2 | 高德天气 | 降级源。仅当配置了 `VITE_WEATHER_KEY` / `VITE_AMAP_BASE` 时参与 |
+| 3 | ipinfo.io / ipapi.co + wttr.in | 最终兜底。境外免费服务，国内网络可能不可达 |
 
-**配置方式：**
-1. **推荐（国内稳定）**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key**（免费，每日上限 5000 次）。为避免 Key 暴露在前端产物中被盗刷，建议配合 `worker/amap-proxy.js` 部署代理并配置 `VITE_AMAP_BASE`（见部署章节）。
-2. **免配置**：`VITE_WEATHER_KEY` 留空即可，自动使用 ipinfo.io / ipapi.co 定位 + wttr.in 获取天气，无需申请任何 Key。
+任一环节失败会自动降级到下一源，全部失败时右上角显示「天气获取失败」，点击可重试。所有外部请求均带 8s 超时，不会出现长时间停留在「定位中…」的情况。
+
+**API Key 不会进入前端产物：**
+
+天气请求统一发往同域路径 `{VITE_UAPI_BASE}/weather`（默认 `/uapi/weather`），`X-API-Key` 由服务端注入：
+
+| 环境 | 谁注入 Key | 在哪里配置 |
+| --- | --- | --- |
+| 本地开发（`pnpm dev`） | Vite dev server 代理 | `.env` 中的 `UAPI_KEY` |
+| Vercel 部署 | `api/weather.js`（Serverless Function） | 项目 Settings → Environment Variables 中的 `UAPI_KEY` |
+| 自有服务器 / Docker | 需自行反代 | 见下方「其他部署方式」 |
+
+`UAPI_KEY` 没有 `VITE_` 前缀，因此**不会被打进前端 JS**。若改用自建代理（nginx / Cloudflare Worker），把 `VITE_UAPI_BASE` 指向该代理地址即可；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
+
+**其他部署方式：**
+- **Docker / nginx**：在 `nginx.conf` 中把 `/uapi/weather` 反代到 `https://uapis.cn/api/v1/misc/weather` 并注入 `X-API-Key` 头（Key 建议通过环境变量 + `envsubst` 注入，不要写死在配置里）；或把 `VITE_UAPI_BASE` 指向一个已部署好的代理地址。
+- **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的写法实现同协议的 `/weather` 接口，再配置 `VITE_UAPI_BASE`。
 
 **说明：**
 - 天气定位精度为**城市级**（按 IP 自动识别当前所在城市）。
-- 若 `VITE_WEATHER_KEY` 留空时依赖 ipinfo.io / ipapi.co / wttr.in 外网服务，国内网络环境可能访问受限，建议配置高德 Key 以保证稳定。
+- 在 [uapis.cn](https://uapis.cn/) 注册可获取 API Key；不配置也能用，但走的是全网共享的匿名游客额度（1500 credits / 30 天），容易被他人耗尽。
+- **可选**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key** 填入 `VITE_WEATHER_KEY` 作为降级源。
+- 代理层响应带 `s-maxage=300`，由 CDN 缓存，可显著降低 uapis 额度消耗。
+- 示例函数 `api/weather.js` 支持可选的 `ALLOWED_ORIGIN` 环境变量（逗号分隔），配置后仅允许指定来源调用，防止函数被他人当作免费接口盗刷。
 
 ## 部署
 
-本项目为纯静态 SPA，支持三种部署方式，按需选择：
+本项目为纯静态 SPA + 一个可选的天气代理函数，支持三种部署方式，按需选择：
 
-| 方式 | 适合场景 | 配置方式 |
-| --- | --- | --- |
-| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` |
-| 静态文件构建 | 自有服务器 / 任意静态托管 | 本地配置 `.env` 后构建，上传 `dist/` |
-| Docker | 自有服务器，容器化运行 | 本地配置 `.env` 后构建镜像 |
+| 方式 | 适合场景 | 配置方式 | 天气 Key |
+| --- | --- | --- | --- |
+| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` | Vercel 可直接用 `api/weather.js` 注入；其他平台需自备代理 |
+| 静态文件构建 | 自有服务器 / 任意静态托管 | 本地配置 `.env` 后构建，上传 `dist/` | 需自备代理 |
+| Docker | 自有服务器，容器化运行 | 本地配置 `.env` 后构建镜像 | 需在 nginx 中反代 |
 
 > **⚠️ 重要**：`.env` 不在 Git 仓库中，托管平台的构建环境默认**没有任何 `VITE_*` 变量**。不先配置变量会导致构建失败（`URIError: URI malformed`）。各平台配置方法见下文，变量说明见 [配置说明](#配置说明)。
 
@@ -165,6 +185,16 @@ pnpm preview
 
 1. 在平台项目的 Settings → Environment Variables 中，参照 [配置说明](#配置说明) 的变量表逐条添加（**值不要带引号**）；
 2. 配置后**重新部署**（Redeploy）生效。
+
+**天气 Key 在 Vercel 上的配置：**
+
+Vercel 会自动把仓库根目录 `api/` 下的文件部署为 Serverless Function，配合 `vercel.json` 的 rewrite，`/uapi/weather` 即由 `api/weather.js` 处理。因此只需要：
+
+1. 在 Vercel 项目的 Environment Variables 中添加 `UAPI_KEY`（**不要加 `VITE_` 前缀**）；
+2. 可选：添加 `ALLOWED_ORIGIN = https://你的域名`，防止函数被他人盗刷；
+3. 无需配置 `VITE_UAPI_BASE`（前端默认走 `/uapi`）。
+
+> Cloudflare Pages / EdgeOne Pages 不支持 Vercel 风格的 `api/` 函数，需自备代理（Cloudflare Worker / 边缘函数）并把 `VITE_UAPI_BASE` 指向它。
 
 > 平台控制台的变量优先级高于 `.env` 文件；Node.js 版本无需手动设置（`engines` 字段已声明，Vercel 会自动选用 Node 22+）。
 
@@ -187,6 +217,8 @@ docker-compose up -d   # 端口 12445
 
 运行镜像基于 `nginx:alpine`，已内置缓存策略与 PWA 响应头（`sw.js` 不缓存、带 hash 资源长缓存、gzip）。
 
+> **⚠️ 天气代理**：镜像里只有静态产物，没有 Serverless Function，因此 `/uapi/weather` 需要在 `nginx.conf` 中自行反代到 `https://uapis.cn/api/v1/misc/weather` 并注入 `X-API-Key` 请求头（Key 用环境变量 + `envsubst` 注入，不要写死在配置里）。未反代时天气主源不可用，会逐级降级到高德 / 境外接口，可能显示「天气获取失败」。
+
 ### Cloudflare Worker（高德 API 代理，可选）
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
@@ -197,19 +229,24 @@ docker-compose up -d   # 端口 12445
 2. 为 Worker 绑定路由或自定义域（如 `https://你的域名/amap/*`）；
 3. 在前端项目的环境变量中设置 `VITE_AMAP_BASE` 指向该 Worker 地址，重新部署。
 
-不使用代理时 `VITE_AMAP_BASE` 留空即可，天气功能走 IP 定位 + wttr.in，无需任何 Key。
+不使用高德代理时 `VITE_AMAP_BASE` 留空即可。高德只是 uapis 主源失败后的降级源，不配置也能正常显示天气。
 
 ## 项目结构
 
 ```
+api/
+└── weather.js      # 天气代理函数（Vercel Serverless Function，服务端注入 API Key）
 src/
-├── api/            # API 接口
+├── api/            # 前端 API 接口
 ├── assets/         # 静态资源（链接配置 JSON）
 ├── components/     # 公共组件
 ├── store/          # Pinia 状态管理
 ├── style/          # 全局样式
 ├── utils/          # 工具函数
 └── views/          # 页面视图
+worker/
+└── amap-proxy.js   # 高德 API 代理（Cloudflare Worker，可选）
+vercel.json         # /uapi/weather → api/weather.js 的重写规则
 ```
 
 ## 许可证

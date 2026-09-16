@@ -141,6 +141,61 @@ export const getHitokoto = async () => {
  */
 
 /**
+ * 带超时的 fetch
+ * 天气降级链上的服务（尤其境外免费接口）经常出现「连接挂起但不报错」，
+ * 不设超时会让组件永久停留在 loading 态，因此统一强制超时。
+ */
+const fetchWithTimeout = async (url, options = {}, timeout = 8000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`请求超时（${timeout}ms）：${url}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+/**
+ * uapis 天气接口（主源）
+ * 文档：https://uapis.cn/docs/api-reference/get-misc-weather
+ * - 前端只请求同域代理 {VITE_UAPI_BASE}/weather，API Key 由服务端注入
+ *   （本地开发见 vite.config.js 的 dev proxy，线上见 api/weather.js），
+ *   因此 Key 不会出现在前端产物中
+ * - 不传 city 时按访客 IP 自动定位，一个请求即可替代 ipinfo / ipapi + wttr.in 整条链路
+ * - city 支持中文（北京）与英文（Tokyo）
+ */
+const UAPI_BASE = (import.meta.env.VITE_UAPI_BASE || "/uapi").replace(/\/+$/, "");
+
+export const getUapiWeather = async (city) => {
+  const params = new URLSearchParams();
+  if (city) params.set("city", city);
+
+  const res = await fetchWithTimeout(`${UAPI_BASE}/weather?${params.toString()}`, {
+    cache: "no-cache",
+  });
+  const data = await res.json().catch(() => null);
+
+  // 该接口的错误返回形式不统一：既有 4xx/5xx + {code, message}，
+  // 也有 HTTP 200 + {error: "LOCATION_NOT_FOUND"}，两者都必须拦截
+  if (!res.ok) {
+    const reason = data && (data.message || data.error);
+    throw new Error(`天气接口请求失败（${res.status}${reason ? "：" + reason : ""}）`);
+  }
+  if (!data || data.error) {
+    throw new Error(`天气接口返回错误：${(data && data.error) || "未知错误"}`);
+  }
+  if (!data.weather && data.temperature === undefined) {
+    throw new Error(`天气接口返回错误：${data.code || "数据为空"}`);
+  }
+  return data;
+};
+
+/**
  * 高德 API 基地址：
  * - 默认直连 restapi.amap.com（key 会暴露在前端产物中，仅测试用）
  * - 配置 VITE_AMAP_BASE 后走自建代理（如 Cloudflare Worker），key 由代理注入，
@@ -150,7 +205,7 @@ const AMAP_BASE = (import.meta.env.VITE_AMAP_BASE || "https://restapi.amap.com")
 
 // 高德API：获取地理位置信息
 export const getAdcode = async (key) => {
-  const res = await fetch(`${AMAP_BASE}/v3/ip?key=${key}`);
+  const res = await fetchWithTimeout(`${AMAP_BASE}/v3/ip?key=${key}`);
   if (!res.ok) {
     throw new Error(`地理位置接口请求失败，状态码：${res.status}`);
   }
@@ -159,7 +214,7 @@ export const getAdcode = async (key) => {
 
 // 高德API：根据城市名获取地理位置编码 (adcode)
 export const getAdcodeByCity = async (key, cityName) => {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${AMAP_BASE}/v3/config/district?keywords=${encodeURIComponent(cityName)}&key=${key}&subdistrict=0`
   );
   if (!res.ok) {
@@ -170,7 +225,7 @@ export const getAdcodeByCity = async (key, cityName) => {
 
 // 高德API：根据城市编码获取天气信息
 export const getWeather = async (key, city) => {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${AMAP_BASE}/v3/weather/weatherInfo?key=${key}&city=${city}`,
     { cache: "no-cache" }
   );
@@ -182,7 +237,7 @@ export const getWeather = async (key, city) => {
 
 // 备用天气接口（wttr.in）
 export const getOtherWeather = async (city = "Shanghai") => {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://wttr.in/${encodeURIComponent(city)}?format=j1&lang=zh`,
     { cache: "no-cache" }
   );
@@ -210,14 +265,14 @@ const zhCityName = (name) => {
 export const getCityByIp = async () => {
   const services = [
     async () => {
-      const res = await fetch("https://ipinfo.io/json", { cache: "no-cache" });
+      const res = await fetchWithTimeout("https://ipinfo.io/json", { cache: "no-cache" });
       if (!res.ok) throw new Error("ipinfo.io 请求失败");
       const data = await res.json();
       if (!data.city) throw new Error("ipinfo.io 定位失败");
       return data.city;
     },
     async () => {
-      const res = await fetch("https://ipapi.co/json/", { cache: "no-cache" });
+      const res = await fetchWithTimeout("https://ipapi.co/json/", { cache: "no-cache" });
       if (!res.ok) throw new Error("ipapi.co 请求失败");
       const data = await res.json();
       if (!data.city) throw new Error("ipapi.co 定位失败");

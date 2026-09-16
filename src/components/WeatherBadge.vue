@@ -57,9 +57,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
-import { getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
+import { getUapiWeather, getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
 import { showMessage } from "@/utils/message.js";
-import { windDirZh } from "@/utils/weather.js";
+import { windDirZh, normalizeWindPower } from "@/utils/weather.js";
 import { mainStore } from "@/store";
 
 const store = mainStore();
@@ -224,6 +224,18 @@ const updateBadgeWidth = () => {
   checkNeedScroll();
 };
 
+// 主源：uapis 天气（不传城市时按访客 IP 自动定位，无需额外定位接口）
+const loadByUapis = async () => {
+  const data = await getUapiWeather();
+  weather.value = {
+    city: data.city || data.province || "未知城市",
+    weather: amapWeatherZh(data.weather),
+    temperature: data.temperature,
+    winddirection: data.wind_direction || "未知",
+    windpower: normalizeWindPower(data.wind_power),
+  };
+};
+
 // 高德 IP 定位 + 天气
 const loadByAmap = async () => {
   const adCodeRes = await getAdcode(mainKey);
@@ -239,7 +251,7 @@ const loadByAmap = async () => {
     weather: amapWeatherZh(live.weather),
     temperature: live.temperature,
     winddirection: live.winddirection,
-    windpower: live.windpower,
+    windpower: normalizeWindPower(live.windpower),
   };
 };
 
@@ -276,11 +288,23 @@ const loadByIp = async () => {
 const loadWeather = async (silent) => {
   loading.value = true;
   try {
-    if (mainKey) {
-      await loadByAmap();
-    } else {
-      await loadByIp();
+    // 降级链：uapis（主源，国内稳定）→ 高德（需自配 Key）→ ipinfo/ipapi + wttr.in（境外兜底）
+    const sources = [{ name: "uapis", run: loadByUapis }];
+    if (mainKey) sources.push({ name: "高德", run: loadByAmap });
+    sources.push({ name: "境外 IP + wttr.in", run: loadByIp });
+
+    let lastError = null;
+    for (const source of sources) {
+      try {
+        await source.run();
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+        console.warn(`天气源「${source.name}」获取失败，尝试降级：`, error);
+      }
     }
+    if (lastError) throw lastError;
   } catch (error) {
     console.error("天气加载失败:", error);
     weather.value = { city: null, weather: null, temperature: null, winddirection: null, windpower: null };

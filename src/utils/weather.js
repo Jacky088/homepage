@@ -1,3 +1,13 @@
+/**
+ * 统一风力格式
+ * uapis / 高德返回的风力可能自带单位（如 "2级"、""），
+ * 而界面渲染时会统一再拼一次「级」，这里先去掉尾部单位避免出现「2级 级」
+ */
+export const normalizeWindPower = (power) => {
+  if (power === null || power === undefined) return "";
+  return String(power).replace(/级$/, "").trim();
+};
+
 // 16 方位风向英文缩写转中文（wttr.in 返回的是英文风向）
 export const windDirZh = (dir) => {
   if (!dir) return "未知";
