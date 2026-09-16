@@ -130,7 +130,7 @@ pnpm preview
 
 | 顺序 | 数据源 | 说明 |
 | --- | --- | --- |
-| 1 | [uapis 天气](https://uapis.cn/docs/api-reference/get-misc-weather) | **主源**。不传城市时按访客 IP 自动定位，一次请求同时拿到城市与天气，国内 CDN 直连稳定 |
+| 1 | [uapis 天气](https://uapis.cn/docs/api-reference/get-misc-weather) | **主源**。前端不传城市，由代理按**访客真实 IP** 定位城市后再取天气（见下文），国内 CDN 直连稳定 |
 | 2 | 高德天气 | 降级源。仅当配置了 `VITE_WEATHER_KEY` / `VITE_AMAP_BASE` 时参与 |
 | 3 | ipinfo.io / ipapi.co + wttr.in | 最终兜底。境外免费服务，国内网络可能不可达 |
 
@@ -146,17 +146,23 @@ pnpm preview
 | Vercel 部署 | `api/weather.js`（Serverless Function） | 项目 Settings → Environment Variables 中的 `UAPI_KEY` |
 | 自有服务器 / Docker | 需自行反代 | 见下方「其他部署方式」 |
 
-`UAPI_KEY` 没有 `VITE_` 前缀，因此**不会被打进前端 JS**。若改用自建代理（nginx / Cloudflare Worker），把 `VITE_UAPI_BASE` 指向该代理地址即可；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
+`UAPI_KEY` 没有 `VITE_` 前缀，因此**不会被打进前端 JS**。
+
+**服务端为什么还要多做一步 IP 反查：**
+
+uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**。请求经 Serverless 函数 / 反向代理转发后，来源 IP 变成了机房 IP（实测 Vercel 机房 IP 会直接返回 `LOCATION_NOT_FOUND`，前端表现就是「天气定位失败」）。所以 `api/weather.js` 会先从 `x-forwarded-for` 取出**访客真实 IP**，再用 uapis 的 `/api/v1/network/ipinfo` 反查出中文城市名，最后带着 `city` 去查天气。
+
+> ⚠️ 不要改用 Vercel 的 `x-vercel-ip-city` 请求头，它给的是英文城市名，而 uapis 对英文名匹配不可靠（实测 `Wuxi` 命中「重庆巫溪县」、`Suzhou` 命中「安徽宿州市」），会静默返回**错误城市**的天气，比失败更难发现。
 
 **其他部署方式：**
-- **Docker / nginx**：在 `nginx.conf` 中把 `/uapi/weather` 反代到 `https://uapis.cn/api/v1/misc/weather` 并注入 `X-API-Key` 头（Key 建议通过环境变量 + `envsubst` 注入，不要写死在配置里）；或把 `VITE_UAPI_BASE` 指向一个已部署好的代理地址。
-- **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的写法实现同协议的 `/weather` 接口，再配置 `VITE_UAPI_BASE`。
+- **Docker / nginx**：**不能只做简单反代**——反代之后 uapis 看到的仍是服务器出口 IP，会踩上面同一个坑。需按同样逻辑先反查访客 IP 归属地再查天气；更省事的做法是把 `VITE_UAPI_BASE` 指向一个已部署好的代理（Vercel 函数 / Cloudflare Worker）。
+- **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的结构实现同协议的 `/weather` 接口（同样需要按访客 IP 反查城市），再配置 `VITE_UAPI_BASE`；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
 
 **说明：**
 - 天气定位精度为**城市级**（按 IP 自动识别当前所在城市）。
 - 在 [uapis.cn](https://uapis.cn/) 注册可获取 API Key；不配置也能用，但走的是全网共享的匿名游客额度（1500 credits / 30 天），容易被他人耗尽。
 - **可选**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key** 填入 `VITE_WEATHER_KEY` 作为降级源。
-- 代理层响应带 `s-maxage=300`，由 CDN 缓存，可显著降低 uapis 额度消耗。
+- 缓存策略：调用方显式传 `city`（与访客无关）时响应带 `s-maxage=300`，走 CDN 共享缓存降低额度消耗；由访客 IP 解析出的城市因人而异，仅返回 `private, max-age=60`，避免把 A 城市的天气发给 B 城市的访客。
 - 示例函数 `api/weather.js` 支持可选的 `ALLOWED_ORIGIN` 环境变量（逗号分隔），配置后仅允许指定来源调用，防止函数被他人当作免费接口盗刷。
 
 ## 部署
