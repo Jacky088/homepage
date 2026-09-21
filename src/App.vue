@@ -181,6 +181,7 @@ onBeforeUnmount(() => {
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
         cursor: pointer;
         user-select: none;
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);

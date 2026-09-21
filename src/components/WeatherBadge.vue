@@ -3,7 +3,6 @@
   <div
     v-show="!store.backgroundShow && !store.setOpenState"
     class="weather-badge glass-pill"
-    :class="{ 'with-menu': store.navCollapsed }"
     :style="badgeStyle"
     @click="togglePanel"
   >
@@ -461,11 +460,8 @@ onBeforeUnmount(() => {
   }
 
   @media (max-width: 720px) {
-    top: 20px;
-    right: 66px; // 避开移动端菜单按钮
-    height: 30px;
     padding: 0 12px;
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     min-width: 0; // 允许 maxWidth 收窄生效，避免与 logo 网址重叠
 
     .badge-text-wrap {
