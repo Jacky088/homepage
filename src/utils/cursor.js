@@ -9,15 +9,11 @@ const lerp = (a, b, n) => {
   return (1 - n) * a + n * b;
 };
 
-const getStyle = (el, attr) => {
-  try {
-    return window.getComputedStyle ? window.getComputedStyle(el)[attr] : el.currentStyle[attr];
-  } catch (e) {
-    return "";
-  }
-};
-
 const cursorInit = () => {
+  // 仅在支持高精度鼠标指针的环境下启用，触屏设备不初始化
+  if (typeof window === "undefined" || !window.matchMedia || !window.matchMedia("(pointer: fine)").matches) {
+    return null;
+  }
   mainCursor = new Cursor();
   return mainCursor;
 };
@@ -28,7 +24,6 @@ class Cursor {
       curr: null,
       prev: null,
     };
-    this.pt = [];
     this.create();
     this.init();
     this.render();
@@ -48,21 +43,16 @@ class Cursor {
       document.body.append(this.cursor);
     }
 
-    var el = document.getElementsByTagName("*");
-    for (let i = 0; i < el.length; i++)
-      if (getStyle(el[i], "cursor") == "pointer") this.pt.push(el[i].outerHTML);
-
     document.body.appendChild((this.scr = document.createElement("style")));
     this.scr.innerHTML = `* {cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' width='10px' height='10px'><circle cx='4' cy='4' r='4' fill='white' /></svg>") 4 4, auto !important}`;
   }
   refresh() {
-    this.scr.remove();
-    this.cursor.classList.remove("active");
+    if (this.scr) this.scr.remove();
+    if (this.cursor) this.cursor.classList.remove("active");
     this.pos = {
       curr: null,
       prev: null,
     };
-    this.pt = [];
 
     this.create();
     this.init();

@@ -45,7 +45,6 @@
 <script setup>
 import { MusicOne } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
-import config from "@/../package.json";
 
 const store = mainStore();
 const fullYear = new Date().getFullYear();
@@ -189,9 +188,11 @@ const marqueeStyle = computed(() => {
       }
   }
   &.blur {
-    backdrop-filter: blur(10px);
-    background: rgb(0 0 0 / 25%);
-    font-size: 16px;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 15px;
   }
 
   // 歌词跑马灯：单程从起点滚到 -distance，forwards 停在末端

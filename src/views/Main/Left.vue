@@ -5,9 +5,7 @@
 </template>
 
 <script setup>
-import { mainStore } from "@/store";
 import Message from "@/components/Message.vue";
-const store = mainStore();
 </script>
 
 <style lang="scss" scoped>

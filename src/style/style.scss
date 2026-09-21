@@ -237,6 +237,51 @@ a:hover {
   }
 }
 
+// 编排式交错入场动画
+@keyframes header-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dock-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes footer-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 // 隐藏元素
 @media (min-width: 910px) and (max-width: 1200px) {
   .sm-hidden {
@@ -319,5 +364,39 @@ scrollbar-thumb {
   > .panel-close,
   > .list-close {
     position: absolute;
+  }
+}
+
+// 紧凑型胶囊玻璃拟态（天气胶囊、浮动工具按钮等）
+.glass-pill {
+  position: relative;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.06) 40%,
+      rgba(0, 0, 0, 0.28) 100%
+    ),
+    rgba(14, 16, 22, 0.42);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s, box-shadow 0.25s;
+
+  &:hover {
+    background:
+      linear-gradient(
+        155deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.09) 40%,
+        rgba(0, 0, 0, 0.35) 100%
+      ),
+      rgba(14, 16, 22, 0.52);
+    border-color: rgba(255, 255, 255, 0.25);
   }
 }

@@ -6,34 +6,50 @@
   <!-- 主界面 -->
   <Transition name="fade" mode="out-in">
     <main id="main" v-if="store.imgLoadStatus">
-      <div class="container" v-show="!store.backgroundShow">
-        <section :class="['all', { 'mobile-hidden': store.mobileOpenState }]" v-show="!store.setOpenState">
-          <MainLeft />
-          <MainRight />
-        </section>
-        <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
-          <MoreSet />
-        </section>
-      </div>
-      <!-- 顶栏天气徽章（显隐由组件内部响应 store 状态，避免多根组件上的运行时指令警告） -->
-      <WeatherBadge />
-      <!-- 右下角浮动工具列：壁纸切换 + 音乐入口（显隐由组件内部响应 store 状态） -->
+      <!-- 1. 顶栏：Logo + 网站链接 + 天气/菜单按钮 -->
+      <header
+        class="site-header"
+        v-show="!store.backgroundShow && !store.setOpenState"
+      >
+        <Message />
+        <Links />
+        <div class="header-right">
+          <WeatherBadge />
+          <Transition name="fade">
+            <div
+              class="menu-btn glass-pill"
+              v-show="store.navCollapsed && !store.mobileOpenState"
+              @click="store.mobileOpenState = !store.mobileOpenState"
+            >
+              <component :is="HamburgerButton" size="20" />
+            </div>
+          </Transition>
+        </div>
+      </header>
+
+      <!-- 2. 中间英雄区：一言 -->
+      <section
+        :class="['hero-section', { 'mobile-hidden': store.mobileOpenState }]"
+        v-show="!store.backgroundShow && !store.setOpenState"
+      >
+        <Hitokoto />
+      </section>
+
+      <!-- 3. 设置面板弹层 -->
+      <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
+        <MoreSet />
+      </section>
+
+      <!-- 4. 浮动部件 -->
       <FloatTools />
-      <!-- 时光胶囊彩蛋（点击左上角 Logo 触发） -->
       <TimeCapsule />
-      <!-- 移动端菜单按钮 -->
-      <Transition name="fade">
-        <Icon
-          class="menu"
-          size="24"
-          v-show="!store.backgroundShow && store.navCollapsed && !store.mobileOpenState"
-          @click="store.mobileOpenState = !store.mobileOpenState"
-        >
-          <component :is="HamburgerButton" />
-        </Icon>
-      </Transition>
-      <!-- 底部区域：社交 + 备案 -->
-      <div :class="['bottom-bar', { 'mobile-hidden': store.mobileOpenState }]" v-show="!store.backgroundShow && !store.setOpenState">
+      <Music v-if="playerHasId" />
+
+      <!-- 5. 底部区域：社交 + 备案/歌词 -->
+      <div
+        :class="['bottom-bar', { 'mobile-hidden': store.mobileOpenState }]"
+        v-show="!store.backgroundShow && !store.setOpenState"
+      >
         <SocialLinks />
         <Footer />
       </div>
@@ -43,13 +59,13 @@
 
 <script setup>
 import { helloInit, checkDays } from "@/utils/getTime.js";
-import { HamburgerButton, CloseSmall } from "@icon-park/vue-next";
+import { HamburgerButton } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
-import { Icon } from "@vicons/utils";
 import { showMessage } from "@/utils/message.js";
 import Loading from "@/components/Loading.vue";
-import MainLeft from "@/views/Main/Left.vue";
-import MainRight from "@/views/Main/Right.vue";
+import Message from "@/components/Message.vue";
+import Links from "@/components/Links.vue";
+import Hitokoto from "@/components/Hitokoto.vue";
 import Background from "@/components/Background.vue";
 import Footer from "@/components/Footer.vue";
 import SocialLinks from "@/components/SocialLinks.vue";
@@ -57,10 +73,13 @@ import MoreSet from "@/views/MoreSet/index.vue";
 import WeatherBadge from "@/components/WeatherBadge.vue";
 import FloatTools from "@/components/FloatTools.vue";
 import TimeCapsule from "@/components/TimeCapsule.vue";
+import Music from "@/components/Music.vue";
 import cursorInit from "@/utils/cursor.js";
-import config from "@/../package.json";
 
 const store = mainStore();
+
+// 播放器 ID
+const playerHasId = import.meta.env.VITE_SONG_ID;
 
 // 页面宽度
 const getWidth = () => {
@@ -87,6 +106,17 @@ watch(
   },
 );
 
+  // 鼠标中键事件
+  const onMiddleMouseDown = (event) => {
+    if (event.button == 1) {
+      store.backgroundShow = !store.backgroundShow;
+      showMessage({
+        message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
+        grouping: true,
+      });
+    }
+  };
+
 onMounted(() => {
   // 自定义鼠标
   cursorInit();
@@ -101,16 +131,6 @@ onMounted(() => {
     return false;
   };
 
-  // 鼠标中键事件
-  const onMiddleMouseDown = (event) => {
-    if (event.button == 1) {
-      store.backgroundShow = !store.backgroundShow;
-      showMessage({
-        message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
-        grouping: true,
-      });
-    }
-  };
   window.addEventListener("mousedown", onMiddleMouseDown);
 
   // 监听当前页面宽度
@@ -131,67 +151,103 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0;
-  transform: scale(1.05);
-  will-change: transform, opacity;
-  animation: main-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 0.4s;
   overflow: hidden;
-  .container {
-    width: 100%;
-    height: 100vh;
-    margin: 0 auto;
-    padding: 0 0.5vw;
-    .all {
-      width: 100%;
-      height: 100%;
-      padding: 0 0.75rem;
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
-      @media (max-width: 720px) {
-        &.mobile-hidden {
-          :deep(.hitokoto),
-          :deep(.function) {
-            opacity: 0;
-            transition: opacity 0.15s ease;
-            pointer-events: none;
-          }
+  .site-header {
+    width: 100%;
+    height: 72px;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 20;
+    animation: header-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 20;
+
+      .menu-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+        :deep(.i-icon) {
+          display: inline-flex;
+          line-height: 0;
         }
-        :deep(.hitokoto),
-        :deep(.function) {
-          transition: opacity 0.15s ease;
+
+        &:hover {
+          transform: translateY(-1px) scale(1.05);
+        }
+        &:active {
+          transform: translateY(0) scale(0.92);
         }
       }
     }
-    .more {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #00000080;
-      backdrop-filter: blur(20px);
-      z-index: 2;
-      animation: fade 0.5s;
-    }
-    @media (max-width: 1200px) {
-      padding: 0 2vw;
+
+    @media (max-width: 720px) {
+      height: 60px;
+      padding: 0 16px;
+      .header-right {
+        gap: 8px;
+      }
     }
   }
-  .bottom-bar {
-    position: absolute;
-    bottom: 0;
+
+  .hero-section {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+    z-index: 10;
+    animation: hero-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+
+    @media (max-width: 720px) {
+      transition: opacity 0.2s ease;
+      &.mobile-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+    }
+  }
+
+  .more {
+    position: fixed;
+    top: 0;
     left: 0;
     width: 100%;
-    z-index: 1;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 50;
+    animation: fade 0.3s;
+  }
+
+  .bottom-bar {
+    width: 100%;
+    z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     padding: 0;
-    animation: fade 0.5s;
+    animation: footer-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
 
     :deep(.social) {
       padding-left: 24px;
@@ -204,60 +260,11 @@ onBeforeUnmount(() => {
         padding-left: 0;
       }
 
-      transition: opacity 0.15s ease;
+      transition: opacity 0.2s ease;
       &.mobile-hidden {
         opacity: 0;
         pointer-events: none;
       }
-    }
-  }
-  .menu {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    top: 23px; // 与天气胶囊垂直居中对齐（桌面端）
-    right: 16px;
-    left: auto;
-    width: 42px;
-    height: 42px;
-    background: rgb(0 0 0 / 20%);
-    backdrop-filter: blur(10px);
-    border-radius: 50%;
-    transition: transform 0.3s;
-    animation: fade 0.5s;
-    z-index: 20;
-    // 项目未引入 icon-park 官方样式，.i-icon 行盒高于内部 svg（基线上下空隙不等），
-    // 导致三横线相对圆心上浮，这里手动归零行盒高度使其精确居中
-    :deep(.i-icon) {
-      display: inline-flex;
-      line-height: 0;
-    }
-    &:active {
-      transform: scale(0.95);
-    }
-  }
-  @media (max-width: 720px) {
-    .menu {
-      top: 14px; // 移动端保持原对齐
-    }
-  }
-  @media (max-height: 720px) {
-    overflow: hidden;
-    .container {
-      height: 100vh;
-    }
-    // menu 不单独设置 top，继承桌面默认或 max-width:720px 断点值，始终与 logo 对齐
-  }
-  @media (max-width: 390px) {
-    overflow: hidden;
-    .container {
-      width: 100%;
-    }
-    .menu {
-      top: 14px;
-      right: 16px;
-      left: auto;
     }
   }
 }

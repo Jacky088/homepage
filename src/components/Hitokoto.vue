@@ -96,31 +96,36 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .hitokoto {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   z-index: 5;
   width: auto;
-  max-width: 80vw;
-  padding: 20px 40px;
-  animation: fade 0.5s;
+  max-width: 84vw;
+  padding: 20px 30px;
   text-align: center;
+  margin: auto;
 
   .content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 70vw;
+    max-width: 72vw;
     // 扩大点击热区（负 margin 抵消，不改变视觉布局）
-    padding: 8px 12px;
-    margin: -8px -12px;
+    padding: 12px 18px;
+    margin: -12px -18px;
     cursor: pointer;
     // 固定最小高度，切换一言时容器高度变化更平滑
     min-height: 4.2em;
     justify-content: center;
     // :key 重建时的入场动画（替代 Transition，不依赖结束事件）
     animation: fade 0.3s;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &:hover {
+      transform: scale(1.02);
+    }
+    &:active {
+      transform: scale(0.98);
+    }
 
     // 可点击暗示：占位文案时轻微呼吸动画引导点击
     &.is-placeholder {

@@ -1,11 +1,11 @@
 <template>
-  <div class="set" @mouseenter="closeShow = true" @mouseleave="closeShow = false" @click.stop>
+  <div class="set music-glass" @mouseenter="closeShow = true" @mouseleave="closeShow = false" @click.stop>
     <transition name="el-fade-in-linear">
       <close-one
         class="close"
         theme="filled"
-        size="28"
-        fill="#ffffff60"
+        size="24"
+        fill="#ffffffc0"
         v-show="closeShow"
         @click="store.setOpenState = false"
       />
@@ -94,27 +94,37 @@ const jumpTo = (url) => {
   position: absolute;
   top: 50%;
   left: 50%;
-  -webkit-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
-  width: 80%;
-  height: 80%;
-  background: rgb(255 255 255 / 40%);
-  border-radius: 16px;
-  padding: 40px;
+  width: 82%;
+  max-width: 1020px;
+  height: 82%;
+  max-height: 700px;
+  border-radius: 28px;
+  padding: 36px 40px;
+  box-sizing: border-box;
 
   .close {
     position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 28px;
-    height: 28px;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: transform 0.2s, background 0.2s;
 
     &:hover {
-      transform: scale(1.2);
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.18);
     }
 
     &:active {
-      transform: scale(1);
+      transform: scale(0.92);
     }
   }
 

@@ -128,17 +128,16 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 // PC 端横排样式
 .links {
-  position: absolute;
-  top: 18px;
-  left: 220px;
-  right: 220px; // 为右上角天气胶囊预留空间，避免遮挡标题
-  height: 52px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
   z-index: 10;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 28px;
-  animation: fade 0.5s;
+  justify-content: center;
+  gap: 24px;
+  padding: 0 16px;
 
   .link-item {
     font-size: 1.15rem;
@@ -181,7 +180,7 @@ onBeforeUnmount(() => {
   }
 
   @media (max-width: 1100px) {
-    gap: 20px;
+    gap: 18px;
   }
 
   // 横排放不下时（由 JS 判定 navCollapsed）隐藏 PC 横排

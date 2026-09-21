@@ -2,7 +2,7 @@
   <!-- 显隐由组件内部响应 store 状态（壁纸展示 / 设置页时隐藏），避免在多根组件上继承 v-show 指令 -->
   <div
     v-show="!store.backgroundShow && !store.setOpenState"
-    class="weather-badge"
+    class="weather-badge glass-pill"
     :class="{ 'with-menu': store.navCollapsed }"
     :style="badgeStyle"
     @click="togglePanel"
@@ -202,7 +202,6 @@ const checkNeedScroll = () => {
 };
 
 // 移动端：按 logo 旁网址的实际宽度动态限制胶囊最大宽度，避免与网址重叠
-// 胶囊右边距（移动端固定 66px，避开菜单按钮）+ 间距 12px
 const updateBadgeWidth = () => {
   if (window.innerWidth > 720) {
     badgeStyle.value = {};
@@ -214,13 +213,10 @@ const updateBadgeWidth = () => {
     return;
   }
   const logoRect = logo.getBoundingClientRect();
-  const gap = 12;
-  // 胶囊可用宽度 = 视口宽度 - 胶囊右边距 - logo 网址右边界 - 间距
-  const available = window.innerWidth - 66 - logoRect.right - gap;
-  // 仅在可用宽度不足时才收窄；保证至少能放下温度与图标
-  const maxW = Math.min(available, 220);
-  badgeStyle.value = maxW < 220 ? { maxWidth: `${maxW}px` } : {};
-  // 限制后可能触发跑马灯，重新检测
+  // 胶囊可用宽度 = 视口宽度 - logo 网址右边界 - 菜单按钮(~46px) - 边距
+  const available = window.innerWidth - logoRect.right - 62;
+  const maxW = Math.max(90, Math.min(available, 200));
+  badgeStyle.value = { maxWidth: `${maxW}px` };
   checkNeedScroll();
 };
 
@@ -392,39 +388,26 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .weather-badge {
-  position: fixed;
-  top: 27px;
-  right: 24px;
-  z-index: 30;
-  display: flex;
-  justify-content: space-between; // 胶囊内文字均匀分布
-  min-width: 180px; // 保证胶囊最小宽度，避免下拉面板文字过挤
-
-  // 顶部导航折叠为汉堡菜单时（横排放不下），胶囊让位汉堡按钮
-  &.with-menu {
-    right: 66px;
-  }
-
+  position: relative;
+  display: inline-flex;
+  justify-content: space-between;
+  min-width: 160px;
   align-items: center;
   gap: 6px;
-  height: 34px;
+  height: 38px;
   padding: 0 14px;
-  border-radius: 17px;
-  background: rgb(0 0 0 / 25%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 19px;
   font-size: 0.9rem;
   color: #fff;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.2s, background 0.2s;
+  flex-shrink: 0;
 
   &:hover {
-    transform: scale(1.05);
-    background: rgb(0 0 0 / 35%);
+    transform: translateY(-1px) scale(1.02);
   }
   &:active {
-    transform: scale(0.95);
+    transform: translateY(0) scale(0.96);
   }
 
   .badge-icon {
@@ -506,12 +489,23 @@ onBeforeUnmount(() => {
   position: fixed;
   z-index: 30;
   // top / left / width 由 JS 根据胶囊实时尺寸动态设置
-  padding: 16px;
-  border-radius: 14px;
-  background: rgb(0 0 0 / 45%);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgb(255 255 255 / 12%);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 30%);
+  padding: 18px 20px;
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.05) 36%,
+      rgba(0, 0, 0, 0.35) 100%
+    ),
+    rgba(14, 16, 22, 0.65);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
   color: #fff;
   box-sizing: border-box;
 

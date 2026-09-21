@@ -2,7 +2,11 @@
   <!-- 基本信息 -->
   <div class="message">
     <!-- Logo（点击打开时光胶囊彩蛋） -->
-    <div class="logo" @click="store.capsuleOpenState = !store.capsuleOpenState">
+    <div
+      class="logo"
+      title="点击探索时光胶囊 ⏳"
+      @click="store.capsuleOpenState = !store.capsuleOpenState"
+    >
       <img class="logo-img" :src="siteLogo" alt="logo" />
       <div :class="{ name: true, 'text-hidden': true, long: siteUrl[0].length >= 6 }">
         <span class="bg">{{ siteUrl[0] }}</span>
@@ -33,59 +37,69 @@ const siteUrl = computed(() => {
 
 <style lang="scss" scoped>
 .message {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 10;
+
   .logo {
-    position: absolute;
-    top: 18px;
-    left: 24px;
-    z-index: 10;
-    display: flex;
+    display: inline-flex;
     flex-direction: row;
     align-items: center;
-    animation: fade 0.5s;
-    // 彩蛋入口：可点击，悬停时 Logo 轻微放大提示
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
     .logo-img {
       border-radius: 50%;
-      width: 52px;
-      height: 52px;
-      transition: transform 0.3s;
+      width: 48px;
+      height: 48px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
     }
-    &:hover .logo-img {
-      transform: scale(1.06);
+
+    &:hover {
+      transform: translateY(-1px);
+      .logo-img {
+        transform: scale(1.08) rotate(5deg);
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.45);
+      }
     }
-    &:active .logo-img {
-      transform: scale(0.98);
+
+    &:active {
+      transform: translateY(0);
+      .logo-img {
+        transform: scale(0.96);
+      }
     }
+
     .name {
-      padding-left: 12px;
+      padding-left: 10px;
       font-family: "Pacifico-Regular";
       white-space: nowrap;
-      transform: translateY(-6px);
+      transform: translateY(-4px);
 
       .bg {
-        font-size: 2rem;
+        font-size: 1.85rem;
       }
 
       .sm {
-        margin-left: 3px;
-        font-size: 1.1rem;
+        margin-left: 2px;
+        font-size: 1.05rem;
       }
     }
+
     @media (max-width: 720px) {
-      top: 14px;
-      left: 16px;
       .logo-img {
-        width: 42px;
-        height: 42px;
+        width: 38px;
+        height: 38px;
       }
       .name {
         .bg {
-          font-size: 1.6rem;
+          font-size: 1.5rem;
         }
         .sm {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
         }
       }
     }

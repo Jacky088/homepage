@@ -10,11 +10,9 @@
 </template>
 
 <script setup>
-import { mainStore } from "@/store";
 import Func from "@/views/Func/index.vue";
 import Hitokoto from "@/components/Hitokoto.vue";
 import Link from "@/components/Links.vue";
-const store = mainStore();
 </script>
 
 <style lang="scss" scoped>
