@@ -104,7 +104,11 @@ const checkNavFit = () => {
   const wasHidden = getComputedStyle(container).display === "none";
   if (wasHidden) container.style.display = "flex";
   const containerWidth = container.clientWidth;
-  const gap = parseFloat(getComputedStyle(container).gap) || 0;
+  const style = getComputedStyle(container);
+  const gap = parseFloat(style.gap) || 0;
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const availableWidth = Math.max(0, containerWidth - paddingLeft - paddingRight);
   let total = 0;
   items.forEach((el, i) => {
     total += el.offsetWidth;
@@ -112,7 +116,7 @@ const checkNavFit = () => {
   });
   // 还原：移除内联样式，交给 nav-collapsed 类继续控制显隐
   if (wasHidden) container.style.display = "";
-  store.setNavCollapsed(total > containerWidth);
+  store.setNavCollapsed(total > availableWidth);
 };
 
 onMounted(() => {
@@ -135,9 +139,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 0 16px;
+  justify-content: flex-start;
+  gap: 26px;
+  padding: 0 16px 0 28px;
 
   .link-item {
     font-size: 1.15rem;
