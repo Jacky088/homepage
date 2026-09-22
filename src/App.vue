@@ -15,15 +15,17 @@
         <Links />
         <div class="header-right">
           <WeatherBadge />
-          <Transition name="fade">
-            <div
-              class="menu-btn glass-pill"
-              v-show="store.navCollapsed && !store.mobileOpenState"
-              @click="store.mobileOpenState = !store.mobileOpenState"
-            >
-              <component :is="HamburgerButton" size="20" />
-            </div>
-          </Transition>
+          <div class="menu-btn-slot">
+            <Transition name="fade">
+              <div
+                class="menu-btn glass-pill"
+                v-show="store.navCollapsed && !store.mobileOpenState"
+                @click="store.mobileOpenState = !store.mobileOpenState"
+              >
+                <component :is="HamburgerButton" size="20" />
+              </div>
+            </Transition>
+          </div>
         </div>
       </header>
 
@@ -36,9 +38,11 @@
       </section>
 
       <!-- 3. 设置面板弹层 -->
-      <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
-        <MoreSet />
-      </section>
+      <Transition name="modal-fade">
+        <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
+          <MoreSet />
+        </section>
+      </Transition>
 
       <!-- 4. 浮动部件 -->
       <FloatTools />
@@ -166,6 +170,9 @@ onBeforeUnmount(() => {
     justify-content: space-between;
     z-index: 20;
     animation: header-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+    transition:
+      height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
     .header-right {
       display: flex;
@@ -173,6 +180,16 @@ onBeforeUnmount(() => {
       gap: 12px;
       flex-shrink: 0;
       z-index: 20;
+      transition: gap 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+      .menu-btn-slot {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
       .menu-btn {
         width: 38px;
@@ -200,7 +217,7 @@ onBeforeUnmount(() => {
       }
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
       height: 60px;
       padding: 0 16px;
       .header-right {
@@ -238,7 +255,40 @@ onBeforeUnmount(() => {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     z-index: 50;
-    animation: fade 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // 统一设置弹窗与遮罩过渡动画
+  .modal-fade-enter-active,
+  .modal-fade-leave-active {
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    :deep(.set) {
+      transition:
+        transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  }
+
+  .modal-fade-leave-active {
+    transition-duration: 0.25s;
+
+    :deep(.set) {
+      transition-duration: 0.25s;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  .modal-fade-enter-from,
+  .modal-fade-leave-to {
+    opacity: 0;
+
+    :deep(.set) {
+      opacity: 0;
+      transform: scale(0.94) translateY(16px);
+    }
   }
 
   .bottom-bar {

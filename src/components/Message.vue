@@ -55,7 +55,11 @@ const siteUrl = computed(() => {
       border-radius: 50%;
       width: 48px;
       height: 48px;
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+      transition:
+        width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.3s ease;
     }
 
     &:hover {
@@ -81,15 +85,17 @@ const siteUrl = computed(() => {
 
       .bg {
         font-size: 1.85rem;
+        transition: font-size 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .sm {
         margin-left: 2px;
         font-size: 1.05rem;
+        transition: font-size 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       }
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
       .logo-img {
         width: 38px;
         height: 38px;

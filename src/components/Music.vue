@@ -120,7 +120,7 @@
   <Teleport to="body">
     <div
       v-show="showMiniPlayer"
-      :class="['mini-player', 'music-glass', { expanded: miniHover }]"
+      :class="['mini-player', 'glass-pill', { expanded: miniHover }]"
       @pointerenter="onMiniEnter"
       @pointerleave="onMiniLeave"
       @click="openPanel"
@@ -135,7 +135,7 @@
           draggable="false"
           @error="coverUrl = ''"
         />
-        <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="1.6">
+        <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="1.6">
           <path d="M9 18V5l12-2v13" stroke-linecap="round" stroke-linejoin="round" />
           <circle cx="6" cy="18" r="3" />
           <circle cx="18" cy="16" r="3" />
@@ -155,13 +155,13 @@
         @click.stop="miniHover ? changePlayState() : openPanel()"
       >
         <!-- 收起态：纯白音符图标（与壁纸按钮同构，无底色轮廓） -->
-        <svg v-if="!miniHover" class="toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="#ffffff">
+        <svg v-if="!miniHover" class="toggle-icon" viewBox="0 0 24 24" width="18" height="18" fill="#ffffff">
           <path d="M9 18.5V5.5l11-2v12.4a3 3 0 1 1-1.5-2.6V6.3l-8 1.5v10.7a3 3 0 1 1-1.5-2.6z" />
         </svg>
         <!-- 展开态：播放/暂停 -->
         <template v-else>
-          <play-one v-if="!store.playerState" theme="filled" size="20" fill="#fff" />
-          <pause v-else theme="filled" size="20" fill="#fff" />
+          <play-one v-if="!store.playerState" theme="filled" size="18" fill="#fff" />
+          <pause v-else theme="filled" size="18" fill="#fff" />
         </template>
       </div>
     </div>
@@ -975,14 +975,38 @@ watch(
   }
 }
 
-// 遮罩层淡入淡出
+// 统一音乐弹窗与遮罩过渡动画
 .music-overlay-fade-enter-active,
 .music-overlay-fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .music-panel,
+  .music-list-box {
+    transition:
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
+
+.music-overlay-fade-leave-active {
+  transition-duration: 0.25s;
+
+  .music-panel,
+  .music-list-box {
+    transition-duration: 0.25s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
 .music-overlay-fade-enter-from,
 .music-overlay-fade-leave-to {
   opacity: 0;
+
+  .music-panel,
+  .music-list-box {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
 }
 
 // 面板/列表横向滑动切换：一个面板滑出、另一个同侧滑入，方向感连贯不跳变。
@@ -1020,15 +1044,15 @@ watch(
 .mini-player {
   position: fixed;
   right: 24px;
-  bottom: 110px; // 壁纸按钮下方 10px（壁纸按钮 bottom 164px - 44px - 10px），高于社交栏顶部
-  z-index: 20; // 低于音乐面板遮罩(50)，高于底栏(1)
+  top: 113px; // 壁纸按钮(top 65px + height 38px = 103px)下方 10px，对齐汉堡菜单与壁纸按钮
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 44px; // 收起态：与壁纸按钮同尺寸的圆形图标
-  height: 44px;
+  width: 38px; // 收起态：与汉堡按钮、壁纸按钮同尺寸(38px)的圆形图标
+  height: 38px;
   padding: 0;
-  border-radius: 22px;
+  border-radius: 19px;
   overflow: hidden; // 收起态裁掉内部内容，展开时随宽度过渡露出
   cursor: pointer;
   user-select: none;
@@ -1037,21 +1061,23 @@ watch(
     width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
     border-radius 0.35s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    transform 0.3s cubic-bezier(0.33, 1, 0.68, 1),
-    box-shadow 0.3s;
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s,
+    top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
   // 悬停展开成胶囊（右边缘固定，向左生长）
   &.expanded {
     width: 190px;
-    padding: 8px 6px 8px 8px;
-    border-radius: 24px;
+    padding: 0 4px 0 6px;
+    border-radius: 19px;
   }
 
-  &:hover {
-    transform: translateY(-2px);
+  &:hover:not(.expanded) {
+    transform: translateY(-1px) scale(1.05);
   }
   &:active {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(0) scale(0.92);
   }
 
   // 小唱片（展开态显示）
@@ -1061,8 +1087,8 @@ watch(
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background:
       repeating-radial-gradient(circle at center, rgb(255 255 255 / 6%) 0 1px, transparent 1px 3px),
@@ -1079,9 +1105,9 @@ watch(
 
     .mini-cover {
       position: absolute;
-      inset: 3px;
-      width: calc(100% - 6px);
-      height: calc(100% - 6px);
+      inset: 2px;
+      width: calc(100% - 4px);
+      height: calc(100% - 4px);
       border-radius: 50%;
       object-fit: cover;
       user-select: none;
@@ -1109,7 +1135,7 @@ watch(
     min-width: 0; // 允许文字省略
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     line-height: 1.2;
     opacity: 0;
     transform: translateX(12px);
@@ -1117,13 +1143,13 @@ watch(
     pointer-events: none;
 
     .mini-name {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: #fff;
       text-shadow: 0 1px 3px rgb(0 0 0 / 30%);
     }
     .mini-artist {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       color: rgb(255 255 255 / 55%);
     }
   }
@@ -1131,15 +1157,15 @@ watch(
   // 右侧圆形按钮：收起态为纯白音符（无底色，与壁纸按钮同构），展开态为播放/暂停圆钮
   .mini-toggle {
     position: absolute;
-    right: 5px;
+    right: 0;
     top: 50%;
     transform: translateY(-50%);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: transparent;
     border: 1px solid transparent;
@@ -1151,16 +1177,15 @@ watch(
 
     // 展开态显示圆钮底（播放/暂停需要可见的按钮轮廓）
     .expanded & {
+      width: 28px;
+      height: 28px;
+      right: 5px;
       background: rgb(255 255 255 / 10%);
       border-color: rgb(255 255 255 / 16%);
     }
 
     &:hover {
       background: rgb(255 255 255 / 20%);
-      transform: translateY(-50%) scale(1.08);
-    }
-    &:active {
-      transform: translateY(-50%) scale(0.92);
     }
   }
 
@@ -1179,9 +1204,9 @@ watch(
   }
 
   // 移动端：无悬停，保持收起态图标，点击直接打开面板
-  @media (max-width: 720px) {
-    right: 27px; // (44 - 38) / 2，与壁纸按钮同轴
-    bottom: 104px; // 壁纸按钮下方 10px（壁纸按钮 bottom 158px - 38px - 10px）
+  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+    right: 16px;
+    top: 107px; // 移动端顶栏 60px，壁纸按钮 top 59px + height 38px = 97px 下方 10px
     width: 38px;
     height: 38px;
     padding: 0;

@@ -1,9 +1,8 @@
 <template>
   <!-- 时光胶囊彩蛋：点击左上角 Logo 触发展示 -->
   <Teleport to="body">
-    <!-- 不用 Transition：动画时钟被节流时 transitionend 丢失会导致遮罩永久残留
-         （与页脚歌词/一言同根因）。入场动画用 CSS animation 实现，关闭直接移除 -->
-    <div v-if="store.capsuleOpenState" class="capsule-mask" @click="store.capsuleOpenState = false">
+    <Transition name="capsule-fade">
+      <div v-if="store.capsuleOpenState" class="capsule-mask" @click="store.capsuleOpenState = false">
         <div class="capsule-panel music-glass" @click.stop>
           <div class="panel-header">
             <div class="title">
@@ -34,7 +33,8 @@
             </div>
           </div>
         </div>
-    </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -76,8 +76,6 @@ onBeforeUnmount(() => {
   background-color: #00000060;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  // 入场动画（不依赖结束事件）
-  animation: fade 0.3s;
 }
 
 // 面板容器：与播放列表（music-list-box）同款视觉
@@ -89,7 +87,6 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   border-radius: 28px;
   padding: 20px 26px 18px;
-  animation: fade 0.4s;
 
   @media (max-width: 480px) {
     border-radius: 24px;
@@ -179,6 +176,37 @@ onBeforeUnmount(() => {
         }
       }
     }
+  }
+}
+
+// 统一弹窗与遮罩过渡动画
+.capsule-fade-enter-active,
+.capsule-fade-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .capsule-panel {
+    transition:
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+.capsule-fade-leave-active {
+  transition-duration: 0.25s;
+
+  .capsule-panel {
+    transition-duration: 0.25s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.capsule-fade-enter-from,
+.capsule-fade-leave-to {
+  opacity: 0;
+
+  .capsule-panel {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
   }
 }
 </style>

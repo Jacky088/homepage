@@ -200,9 +200,15 @@ const checkNeedScroll = () => {
   });
 };
 
+// 判断是否处于紧凑移动端模式（真正触屏移动设备且 ≤720px，或任意设备极窄视口 ≤480px）
+const isCompactHeader = () => {
+  const isTouchMobile = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  return window.innerWidth <= 480 || (window.innerWidth <= 720 && isTouchMobile);
+};
+
 // 移动端：按 logo 旁网址的实际宽度动态限制胶囊最大宽度，避免与网址重叠
 const updateBadgeWidth = () => {
-  if (window.innerWidth > 720) {
+  if (!isCompactHeader()) {
     badgeStyle.value = {};
     return;
   }
@@ -320,7 +326,7 @@ const updatePanelPosition = () => {
   const rect = badge.getBoundingClientRect();
   let left = rect.left;
   // 移动端面板宽度独立于胶囊，保证详情可读
-  const width = window.innerWidth <= 720 ? 220 : rect.width;
+  const width = isCompactHeader() ? 220 : rect.width;
   // 面板右边缘与胶囊右边缘对齐
   left = rect.right - width;
   // 边界保护：避免面板超出视口左右边缘
@@ -401,6 +407,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  transition:
+    padding 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    font-size 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    min-width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
     transform: translateY(-1px) scale(1.02);
@@ -421,6 +433,7 @@ onBeforeUnmount(() => {
     overflow: hidden;
     white-space: nowrap;
     flex-shrink: 1;
+    transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .badge-text {
     display: inline-flex;
@@ -459,7 +472,7 @@ onBeforeUnmount(() => {
     font-size: 0.8rem;
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
     padding: 0 12px;
     font-size: 0.85rem;
     min-width: 0; // 允许 maxWidth 收窄生效，避免与 logo 网址重叠
@@ -538,18 +551,29 @@ onBeforeUnmount(() => {
     }
   }
 
-  @media (max-width: 720px) {
+  transform-origin: top right;
+
+  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
     padding: 12px;
   }
 }
 
+// 统一气泡面板过渡动画
 .badge-fade-enter-active,
 .badge-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+.badge-fade-leave-active {
+  transition-duration: 0.25s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .badge-fade-enter-from,
 .badge-fade-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: scale(0.94) translateY(-10px);
 }
 </style>
