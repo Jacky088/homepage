@@ -8,7 +8,7 @@
     <main id="main" v-if="store.imgLoadStatus">
       <!-- 1. 顶栏：Logo + 网站链接 + 天气/菜单按钮 -->
       <header
-        class="site-header"
+        :class="['site-header', { 'drawer-open': store.mobileOpenState }]"
         v-show="!store.backgroundShow && !store.setOpenState"
       >
         <Message />
@@ -19,10 +19,16 @@
             <Transition name="fade">
               <div
                 class="menu-btn glass-pill"
-                v-show="store.navCollapsed && !store.mobileOpenState"
+                :class="{ 'is-active': store.mobileOpenState }"
+                v-show="store.navCollapsed"
+                :title="store.mobileOpenState ? '关闭网站列表' : '展开网站列表'"
                 @click="store.mobileOpenState = !store.mobileOpenState"
               >
-                <component :is="HamburgerButton" size="20" />
+                <div class="burger-icon" :class="{ 'is-active': store.mobileOpenState }">
+                  <span class="burger-line line-1"></span>
+                  <span class="burger-line line-2"></span>
+                  <span class="burger-line line-3"></span>
+                </div>
               </div>
             </Transition>
           </div>
@@ -63,7 +69,6 @@
 
 <script setup>
 import { helloInit, checkDays } from "@/utils/getTime.js";
-import { HamburgerButton } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
 import { showMessage } from "@/utils/message.js";
 import Loading from "@/components/Loading.vue";
@@ -174,6 +179,15 @@ onBeforeUnmount(() => {
       height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
       padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
+    &.drawer-open {
+      z-index: 101; // 抽屉菜单打开时，顶栏提升至抽屉遮罩层 (z-index 100) 上方
+      pointer-events: none; // 空白处点击事件透传给下方的遮罩层以关闭抽屉
+
+      .menu-btn {
+        pointer-events: auto; // 关闭按钮保持独立可点击
+      }
+    }
+
     .header-right {
       display: flex;
       align-items: center;
@@ -203,18 +217,76 @@ onBeforeUnmount(() => {
         cursor: pointer;
         user-select: none;
         pointer-events: auto;
-        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-        :deep(.i-icon) {
-          display: inline-flex;
-          line-height: 0;
-        }
+        transition:
+          transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+          background-color 0.25s ease,
+          border-color 0.25s ease,
+          box-shadow 0.25s ease;
 
         &:hover {
           transform: translateY(-1px) scale(1.05);
         }
         &:active {
           transform: translateY(0) scale(0.92);
+        }
+
+        &.is-active {
+          background: rgba(255, 255, 255, 0.22);
+          border-color: rgba(255, 255, 255, 0.35);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        .burger-icon {
+          width: 20px;
+          height: 20px;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .burger-line {
+            position: absolute;
+            left: 1px;
+            width: 18px;
+            height: 2px;
+            background-color: #ffffff;
+            border-radius: 2px;
+            transform-origin: center;
+            transition:
+              transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.22s ease;
+            will-change: transform, opacity;
+
+            &.line-1 {
+              transform: translateY(-5.5px);
+            }
+
+            &.line-2 {
+              transform: translateY(0);
+              opacity: 1;
+            }
+
+            &.line-3 {
+              transform: translateY(5.5px);
+            }
+          }
+
+          &.is-active {
+            .burger-line {
+              &.line-1 {
+                transform: translateY(0) rotate(45deg);
+              }
+
+              &.line-2 {
+                opacity: 0;
+                transform: scaleX(0);
+              }
+
+              &.line-3 {
+                transform: translateY(0) rotate(-45deg);
+              }
+            }
+          }
         }
       }
     }
