@@ -1,7 +1,11 @@
 <template>
-  <!-- 右上角浮动工具列：壁纸切换按钮（位于汉堡菜单下方）。
+  <!-- 右上角浮动工具列：壁纸切换按钮。
+       桌面端无汉堡菜单时占据汉堡菜单位置 (top: 17px)，有汉堡菜单时自动下移 (top: 65px)；
        显隐由组件内部响应 store 状态（音乐面板 / 壁纸展示 / 设置页时隐藏），避免在多根组件上继承 v-show 指令 -->
-  <div v-show="!store.musicOpenState && !store.backgroundShow && !store.setOpenState" class="float-tools">
+  <div
+    v-show="!store.musicOpenState && !store.backgroundShow && !store.setOpenState"
+    :class="['float-tools', { 'has-nav-btn': store.navCollapsed }]"
+  >
     <!-- 切换壁纸：图片壁纸 / 视频背景两态 -->
     <button
       class="tool-btn glass-pill"
@@ -54,14 +58,19 @@ const toggleBackground = () => {
 .float-tools {
   position: fixed;
   right: 24px;
-  top: 65px; // 汉堡菜单(top 17px + height 38px = 55px)下方 10px，对齐汉堡菜单
-  z-index: 20;
+  top: 17px; // 无汉堡菜单时：占据汉堡菜单位置 (top 17px)
+  z-index: 21;
   display: flex;
   flex-direction: column;
   animation: fade 0.4s;
   transition:
     top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
     right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  // 有汉堡菜单时：自动下移到汉堡菜单下方 (top 17px + 38px + 10px = 65px)
+  &.has-nav-btn {
+    top: 65px;
+  }
 
   .tool-btn {
     display: flex;
@@ -90,7 +99,11 @@ const toggleBackground = () => {
 
   @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
     right: 16px;
-    top: 59px; // 移动端顶栏 60px，汉堡菜单居中(top 11px + height 38px = 49px)下方 10px
+    top: 11px; // 移动端无汉堡菜单时兜底居中
+
+    &.has-nav-btn {
+      top: 59px; // 移动端有汉堡菜单时：位于汉堡菜单下方 (top 11px + 38px + 10px = 59px)
+    }
   }
 }
 </style>

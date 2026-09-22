@@ -189,6 +189,7 @@ onBeforeUnmount(() => {
         display: flex;
         align-items: center;
         justify-content: center;
+        pointer-events: none;
       }
 
       .menu-btn {
@@ -201,6 +202,7 @@ onBeforeUnmount(() => {
         flex-shrink: 0;
         cursor: pointer;
         user-select: none;
+        pointer-events: auto;
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
         :deep(.i-icon) {

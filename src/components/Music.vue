@@ -120,7 +120,7 @@
   <Teleport to="body">
     <div
       v-show="showMiniPlayer"
-      :class="['mini-player', 'glass-pill', { expanded: miniHover }]"
+      :class="['mini-player', 'glass-pill', { expanded: miniHover, 'has-nav-btn': store.navCollapsed }]"
       @pointerenter="onMiniEnter"
       @pointerleave="onMiniLeave"
       @click="openPanel"
@@ -1040,11 +1040,11 @@ watch(
   }
 }
 
-// ========== 迷你播放器（右下角悬停展开式：收起态为音乐图标，悬停展开成胶囊） ==========
+// ========== 迷你播放器（右上角浮动按钮：收起态为音乐图标，悬停展开成胶囊） ==========
 .mini-player {
   position: fixed;
   right: 24px;
-  top: 113px; // 壁纸按钮(top 65px + height 38px = 103px)下方 10px，对齐汉堡菜单与壁纸按钮
+  top: 65px; // 无汉堡菜单时：位于壁纸按钮(top 17px + 38px = 55px)下方 10px
   z-index: 20;
   display: flex;
   align-items: center;
@@ -1065,6 +1065,11 @@ watch(
     box-shadow 0.3s,
     top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
     right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  // 有汉堡菜单时：自动下移到壁纸按钮下方 (top 65px + 38px + 10px = 113px)
+  &.has-nav-btn {
+    top: 113px;
+  }
 
   // 悬停展开成胶囊（右边缘固定，向左生长）
   &.expanded {
@@ -1206,7 +1211,11 @@ watch(
   // 移动端：无悬停，保持收起态图标，点击直接打开面板
   @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
     right: 16px;
-    top: 107px; // 移动端顶栏 60px，壁纸按钮 top 59px + height 38px = 97px 下方 10px
+    top: 59px; // 移动端无汉堡菜单时兜底
+
+    &.has-nav-btn {
+      top: 107px; // 移动端有汉堡菜单时：位于壁纸按钮下方 (top 59px + 38px + 10px = 107px)
+    }
     width: 38px;
     height: 38px;
     padding: 0;
