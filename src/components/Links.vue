@@ -53,10 +53,11 @@ import { CloseOne } from "@icon-park/vue-next";
 import { Blog, Terminal, Cloud, Compass, Book, Fire, LaptopCode, StickyNote, Staylinked, AddressCard, Toolbox, Github, Image, Info } from "@vicons/fa";
 import { mainStore } from "@/store";
 import siteLinks from "@/assets/siteLinks.json";
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
 
 const store = mainStore();
 const linksRef = ref(null);
+let resizeObserver = null;
 
 // 网站链接图标
 const siteIcon = {
@@ -97,35 +98,73 @@ const jumpLink = (data) => {
 // 测量横排导航是否放得下所有网站标题
 const checkNavFit = () => {
   if (!linksRef.value) return;
+  // 若顶栏处于隐藏状态（如设置页 / 壁纸展示），跳过测量避免 clientWidth 为 0 导致误折叠
+  if (store.backgroundShow || store.setOpenState) return;
+
   const container = linksRef.value;
   const items = container.querySelectorAll(".link-item");
   if (!items.length) return;
-  // 若当前因折叠而隐藏（display:none），临时用内联样式覆盖以测得真实宽度
+
+  // 若当前因折叠而隐藏（display:none），临时覆盖以测得真实容器宽度与项目宽度
   const wasHidden = getComputedStyle(container).display === "none";
-  if (wasHidden) container.style.display = "flex";
+  if (wasHidden) {
+    container.style.visibility = "hidden";
+    container.style.display = "flex";
+  }
+
   const containerWidth = container.clientWidth;
   const style = getComputedStyle(container);
   const gap = parseFloat(style.gap) || 0;
   const paddingLeft = parseFloat(style.paddingLeft) || 0;
   const paddingRight = parseFloat(style.paddingRight) || 0;
   const availableWidth = Math.max(0, containerWidth - paddingLeft - paddingRight);
+
   let total = 0;
   items.forEach((el, i) => {
     total += el.offsetWidth;
     if (i < items.length - 1) total += gap;
   });
-  // 还原：移除内联样式，交给 nav-collapsed 类继续控制显隐
-  if (wasHidden) container.style.display = "";
+
+  // 还原临时样式
+  if (wasHidden) {
+    container.style.display = "";
+    container.style.visibility = "";
+  }
+
   store.setNavCollapsed(total > availableWidth);
 };
 
+// 监听背景展示与设置页面关闭，及时重新测量
+watch(
+  () => [store.backgroundShow, store.setOpenState],
+  ([bg, set]) => {
+    if (!bg && !set) {
+      nextTick(checkNavFit);
+    }
+  },
+);
+
 onMounted(() => {
   checkNavFit();
+  if (document.fonts) {
+    document.fonts.ready.then(checkNavFit);
+  }
   window.addEventListener("resize", checkNavFit);
+  const header = document.querySelector(".site-header");
+  if (header && "ResizeObserver" in window) {
+    resizeObserver = new ResizeObserver(() => {
+      checkNavFit();
+    });
+    resizeObserver.observe(header);
+  }
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkNavFit);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
 });
 </script>
 
@@ -140,7 +179,7 @@ onBeforeUnmount(() => {
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 26px;
+  gap: 24px;
   padding: 0 16px 0 28px;
 
   .link-item {
@@ -181,10 +220,6 @@ onBeforeUnmount(() => {
     &:active {
       transform: scale(0.95);
     }
-  }
-
-  @media (max-width: 1100px) {
-    gap: 18px;
   }
 
   // 横排放不下时（由 JS 判定 navCollapsed）隐藏 PC 横排
