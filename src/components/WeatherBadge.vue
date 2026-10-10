@@ -59,6 +59,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { getUapiWeather, getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
 import { showMessage } from "@/utils/message.js";
 import { windDirZh, normalizeWindPower } from "@/utils/weather.js";
+import { isCompactViewport } from "@/constants/breakpoint";
 import { mainStore } from "@/store";
 
 const store = mainStore();
@@ -200,10 +201,10 @@ const checkNeedScroll = () => {
   });
 };
 
-// 判断是否处于紧凑移动端模式（真正触屏移动设备且 ≤720px，或任意设备极窄视口 ≤480px）
+// 判断是否处于紧凑移动端模式（真正触屏移动设备且 ≤$bp-md，或任意设备极窄视口 ≤$bp-sm）
 const isCompactHeader = () => {
   const isTouchMobile = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-  return window.innerWidth <= 480 || (window.innerWidth <= 720 && isTouchMobile);
+  return isCompactViewport(window.innerWidth, isTouchMobile);
 };
 
 // 移动端：按 logo 旁网址的实际宽度动态限制胶囊最大宽度，避免与网址重叠
@@ -472,7 +473,7 @@ onBeforeUnmount(() => {
     font-size: 0.8rem;
   }
 
-  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+  @include mobile-viewport {
     padding: 0 12px;
     font-size: 0.85rem;
     min-width: 0; // 允许 maxWidth 收窄生效，避免与 logo 网址重叠
@@ -553,7 +554,7 @@ onBeforeUnmount(() => {
 
   transform-origin: top right;
 
-  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+  @include mobile-viewport {
     padding: 12px;
   }
 }

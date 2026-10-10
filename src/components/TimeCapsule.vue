@@ -9,9 +9,14 @@
               <hourglass-full theme="two-tone" size="24" :fill="['#efefef', '#00000020']" />
               <span class="capsule-title">时光胶囊</span>
             </div>
-            <div class="capsule-close" @click="store.capsuleOpenState = false">
+            <button
+              type="button"
+              class="capsule-close"
+              aria-label="关闭时光胶囊"
+              @click="store.capsuleOpenState = false"
+            >
               <close-one theme="filled" size="18" fill="#ffffffb0" />
-            </div>
+            </button>
           </div>
           <div v-if="timeData" class="all-capsule">
             <div v-for="(item, tag, index) in timeData" :key="index" class="capsule-item">
@@ -88,7 +93,7 @@ onBeforeUnmount(() => {
   border-radius: 28px;
   padding: 20px 26px 18px;
 
-  @media (max-width: 480px) {
+  @media (max-width: $bp-sm) {
     border-radius: 24px;
   }
 

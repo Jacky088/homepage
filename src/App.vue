@@ -17,10 +17,13 @@
           <WeatherBadge />
           <div class="menu-btn-slot">
             <Transition name="fade">
-              <div
+              <button
+                type="button"
                 class="menu-btn glass-pill"
                 :class="{ 'is-active': store.mobileOpenState }"
                 v-show="store.navCollapsed"
+                :aria-expanded="store.mobileOpenState"
+                aria-controls="mobile-drawer"
                 :title="store.mobileOpenState ? '关闭网站列表' : '展开网站列表'"
                 @click="store.mobileOpenState = !store.mobileOpenState"
               >
@@ -29,7 +32,7 @@
                   <span class="burger-line line-2"></span>
                   <span class="burger-line line-3"></span>
                 </div>
-              </div>
+              </button>
             </Transition>
           </div>
         </div>
@@ -84,8 +87,12 @@ import FloatTools from "@/components/FloatTools.vue";
 import TimeCapsule from "@/components/TimeCapsule.vue";
 import Music from "@/components/Music.vue";
 import cursorInit from "@/utils/cursor.js";
+import { isMobileWidth } from "@/constants/breakpoint";
 
 const store = mainStore();
+
+// 自定义鼠标实例的清理函数（仅在精确指针设备上会被赋值）
+let cursorCleanup = null;
 
 // 播放器 ID
 const playerHasId = import.meta.env.VITE_SONG_ID;
@@ -109,36 +116,41 @@ const loadComplete = () => {
 watch(
   () => store.innerWidth,
   (value) => {
-    if (value < 721) {
+    // 与 SCSS 的 max-width: 720px 同口径：720px 归移动端
+    if (isMobileWidth(value)) {
       store.setOpenState = false;
     }
   },
 );
 
-  // 鼠标中键事件
-  const onMiddleMouseDown = (event) => {
-    if (event.button == 1) {
-      store.backgroundShow = !store.backgroundShow;
-      showMessage({
-        message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
-        grouping: true,
-      });
-    }
-  };
+// 鼠标中键事件
+const onMiddleMouseDown = (event) => {
+  if (event.button === 1) {
+    // 阻止浏览器默认的中键自动滚动，否则切换壁纸的同时页面会滚一下
+    event.preventDefault();
+    store.backgroundShow = !store.backgroundShow;
+    showMessage({
+      message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
+      grouping: true,
+    });
+  }
+};
+
+// 屏蔽右键（用 addEventListener 注册，避免属性赋值覆盖其他处理器）
+const onContextMenu = (event) => {
+  showMessage({
+    message: "为了浏览体验，本站禁用右键",
+    grouping: true,
+    duration: 2000,
+  });
+  event.preventDefault();
+};
 
 onMounted(() => {
-  // 自定义鼠标
-  cursorInit();
+  // 自定义鼠标（返回清理函数，卸载时还原光标样式）
+  cursorCleanup = cursorInit();
 
-  // 屏蔽右键
-  document.oncontextmenu = () => {
-    showMessage({
-      message: "为了浏览体验，本站禁用右键",
-      grouping: true,
-      duration: 2000,
-    });
-    return false;
-  };
+  document.addEventListener("contextmenu", onContextMenu);
 
   window.addEventListener("mousedown", onMiddleMouseDown);
 
@@ -148,6 +160,11 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (cursorCleanup) {
+    cursorCleanup();
+    cursorCleanup = null;
+  }
+  document.removeEventListener("contextmenu", onContextMenu);
   window.removeEventListener("mousedown", onMiddleMouseDown);
   window.removeEventListener("resize", getWidth);
 });
@@ -291,7 +308,7 @@ onBeforeUnmount(() => {
       }
     }
 
-    @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+    @media (max-width: $bp-md) and (hover: none) and (pointer: coarse), (max-width: $bp-sm) {
       height: 60px;
       padding: 0 16px;
       .header-right {
@@ -310,7 +327,7 @@ onBeforeUnmount(() => {
     z-index: 10;
     animation: hero-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 
-    @media (max-width: 720px) {
+    @media (max-width: $bp-md) {
       transition: opacity 0.2s ease;
       &.mobile-hidden {
         opacity: 0;
@@ -378,7 +395,7 @@ onBeforeUnmount(() => {
       padding-left: 24px;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: $bp-md) {
       align-items: center;
 
       :deep(.social) {

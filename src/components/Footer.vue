@@ -205,7 +205,7 @@ const marqueeStyle = computed(() => {
     }
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: $bp-md) {
     font-size: 0.9rem;
     &.blur {
       font-size: 0.9rem;
@@ -216,7 +216,7 @@ const marqueeStyle = computed(() => {
       display: none;
     }
   }
-  @media (max-width: 480px) {
+  @media (max-width: $bp-sm) {
     .hidden {
       display: none;
     }

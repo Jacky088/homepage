@@ -52,7 +52,13 @@ export default ({ mode }) => {
                 cacheName: "video-cache",
                 rangeRequests: true, // 支持 HTTP Range 分段加载
                 cacheableResponse: {
-                  statuses: [200, 206], // 缓存完整响应和分段响应
+                  // 只缓存完整的 200 响应。
+                  // 不能把 206 列进来：Cache API 的 put() 明确拒绝部分响应，
+                  // 会抛 "Partial response (status code 206) is unsupported"，
+                  // 结果是视频永远存不进缓存、每次访问都重新下载。
+                  // Range 请求由上面的 rangeRequests 注入的 RangeRequestsPlugin
+                  // 从已缓存的完整响应切片提供，无需缓存 206 本身。
+                  statuses: [200],
                 },
                 expiration: {
                   maxEntries: 5,

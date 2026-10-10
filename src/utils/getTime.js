@@ -90,9 +90,10 @@ export const helloInit = () => {
   } else {
     hello = "夜深了";
   }
+  // 用 VNode 而非 dangerouslyUseHTMLString：外观不变（问候语加粗），
+  // 但不需要开启 HTML 注入通道
   showMessage({
-    dangerouslyUseHTMLString: true,
-    message: `<strong>${hello}</strong> 欢迎来到我的主页`,
+    message: h("span", [h("strong", hello), " 欢迎来到我的主页"]),
   });
 };
 

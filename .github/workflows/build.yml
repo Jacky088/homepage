@@ -1,46 +1,66 @@
-# Dev 分支推送部署预览
-## 仅部署 Win 端
+# 构建产物
 name: Build Dev
 
 on:
   push:
     branches:
+      - main
       - dev
-      - master
+  # 允许在 PR 上跑同样的检查
+  pull_request:
+    branches:
+      - main
 
 jobs:
   release:
     name: Build Website
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       # 检出 Git 仓库
       - name: Check out git repository
-        uses: actions/checkout@v4.1.1
-      # 安装 Node.js
-      - name: Install Node.js
-        uses: actions/setup-node@v4.0.0
+        uses: actions/checkout@v4
+
+      # 先装 pnpm：setup-node 的 cache: pnpm 依赖 pnpm 此时已在 PATH 上，
+      # 版本与 package.json 的 packageManager 字段保持一致（11.15.1）
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: "18.x"
-      # 复制环境变量文件
+          version: 11.15.1
+
+      # 安装 Node.js（package.json engines 要求 >=22.13）
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # 按锁文件精确安装，保证构建可复现
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 代码检查（此前这条流水线从未跑过 lint）
+      - name: Lint
+        run: pnpm lint
+
+      # 复制环境变量文件（%VITE_*% 占位符需注入，否则构建失败）
       - name: Copy .env.example
         run: |
-          if (-not (Test-Path .env)) {
-            Copy-Item .env.example .env
-          } else {
-            Write-Host ".env file already exists. Skipping the copy step."
-          }
-      # 安装项目依赖
-      - name: Install Dependencies
-        run: npm install
+          if [ ! -f .env ]; then
+            cp .env.example .env
+            echo "Created .env from .env.example"
+          else
+            echo ".env file already exists. Skipping the copy step."
+          fi
+
       # 构建程序
       - name: Build Website
-        run: npm run build
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: pnpm run build
+
       # 上传构建文件
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Home
           path: dist
+          if-no-files-found: error

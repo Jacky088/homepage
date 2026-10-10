@@ -33,6 +33,16 @@ const isAllowedJsonpUrl = (rawUrl) => {
 };
 
 /**
+ * 音频地址统一升级为 https
+ * 上游 Meting API 经常返回 http:// 的 CDN 地址，而：
+ * - 站点部署在 HTTPS 下，浏览器会按混合内容直接拦截；
+ * - index.html 的 CSP `media-src 'self' https: blob:` 也会拒绝 http 请求。
+ * 两条都会让播放器报 "audio error" 并自动跳到下一首。
+ * 音乐 CDN 均支持 https（上方 QQ 分支的 domain 也是这么处理的）。
+ */
+const toHttps = (url) => (typeof url === "string" ? url.replace(/^http:\/\//, "https://") : url);
+
+/**
  * 获取音乐播放列表（你已有代码，保留即可）
  */
 export const getPlayerList = async (server, type, id) => {
@@ -75,7 +85,7 @@ export const getPlayerList = async (server, type, id) => {
     return data.map((v, i) => ({
       name: v.name || v.title,
       artist: v.artist || v.author,
-      url: domain + jsonpData.req_0.data.midurlinfo[i].purl,
+      url: toHttps(domain + jsonpData.req_0.data.midurlinfo[i].purl),
       cover: v.cover || v.pic,
       lrc: v.lrc,
     }));
@@ -83,7 +93,7 @@ export const getPlayerList = async (server, type, id) => {
     return data.map((v) => ({
       name: v.name || v.title,
       artist: v.artist || v.author,
-      url: v.url,
+      url: toHttps(v.url),
       cover: v.cover || v.pic,
       lrc: v.lrc,
     }));
@@ -208,17 +218,6 @@ export const getAdcode = async (key) => {
   const res = await fetchWithTimeout(`${AMAP_BASE}/v3/ip?key=${key}`);
   if (!res.ok) {
     throw new Error(`地理位置接口请求失败，状态码：${res.status}`);
-  }
-  return await res.json();
-};
-
-// 高德API：根据城市名获取地理位置编码 (adcode)
-export const getAdcodeByCity = async (key, cityName) => {
-  const res = await fetchWithTimeout(
-    `${AMAP_BASE}/v3/config/district?keywords=${encodeURIComponent(cityName)}&key=${key}&subdistrict=0`
-  );
-  if (!res.ok) {
-    throw new Error(`城市编码接口请求失败，状态码：${res.status}`);
   }
   return await res.json();
 };

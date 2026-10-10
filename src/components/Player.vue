@@ -80,11 +80,6 @@ const props = defineProps({
   },
 });
 
-const listHeight = computed(() => {
-  return props.listMaxHeight + "px";
-});
-void listHeight.value;
-
 // 初始化播放器
 onMounted(() => {
   nextTick(() => {

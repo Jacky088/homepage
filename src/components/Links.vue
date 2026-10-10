@@ -4,12 +4,13 @@
     ref="linksRef"
     :class="['links', { 'nav-collapsed': store.navCollapsed }]"
   >
-    <!-- PC: 横排文字链接 -->
+    <!-- PC: 横排文字链接（带 href 才可聚焦、可用回车激活；真实跳转由 jumpLink 处理） -->
     <a
       v-for="item in siteLinks"
       :key="item.name"
       class="link-item"
-      @click="jumpLink(item)"
+      href="#"
+      @click.prevent="jumpLink(item)"
     >
       {{ item.name }}
     </a>
@@ -18,20 +19,26 @@
   <!-- 移动端: 底部抽屉面板 -->
   <Teleport to="body">
     <Transition name="drawer">
-      <div v-show="store.navCollapsed && store.mobileOpenState" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
+      <div v-show="store.navCollapsed && store.mobileOpenState" id="mobile-drawer" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
         <div class="mobile-drawer" @click.stop>
           <div class="drawer-header">
             <span class="drawer-title">网站列表</span>
-            <span class="drawer-close" @click="store.mobileOpenState = false">
+            <button
+              type="button"
+              class="drawer-close"
+              aria-label="关闭网站列表"
+              @click="store.mobileOpenState = false"
+            >
               <close-one theme="filled" size="24" fill="#ffffff80" />
-            </span>
+            </button>
           </div>
           <div class="drawer-grid">
             <a
               v-for="item in siteLinks"
               :key="item.name"
               class="grid-item"
-              @click="jumpLink(item)"
+              href="#"
+              @click.prevent="jumpLink(item)"
             >
               <div class="grid-icon">
                 <Icon size="22">
@@ -53,6 +60,7 @@ import { CloseOne } from "@icon-park/vue-next";
 import { Blog, Terminal, Cloud, Compass, Book, Fire, LaptopCode, StickyNote, Staylinked, AddressCard, Toolbox, Github, Image, Info } from "@vicons/fa";
 import { mainStore } from "@/store";
 import siteLinks from "@/assets/siteLinks.json";
+import debounce from "@/utils/debounce.js";
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
 
 const store = mainStore();
@@ -134,6 +142,10 @@ const checkNavFit = () => {
   store.setNavCollapsed(total > availableWidth);
 };
 
+// 防抖版测量：checkNavFit 会遍历所有 .link-item 读 offsetWidth（强制同步布局），
+// 直接挂在 resize / ResizeObserver 上会在拖拽窗口时每帧触发一次 reflow
+const scheduleNavFit = debounce(checkNavFit, 100);
+
 // 监听背景展示与设置页面关闭，及时重新测量
 watch(
   () => [store.backgroundShow, store.setOpenState],
@@ -149,18 +161,18 @@ onMounted(() => {
   if (document.fonts) {
     document.fonts.ready.then(checkNavFit);
   }
-  window.addEventListener("resize", checkNavFit);
+  window.addEventListener("resize", scheduleNavFit);
   const header = document.querySelector(".site-header");
   if (header && "ResizeObserver" in window) {
     resizeObserver = new ResizeObserver(() => {
-      checkNavFit();
+      scheduleNavFit();
     });
     resizeObserver.observe(header);
   }
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", checkNavFit);
+  window.removeEventListener("resize", scheduleNavFit);
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
@@ -276,6 +288,8 @@ onBeforeUnmount(() => {
         display: flex;
         align-items: center;
         justify-content: center;
+        border: none; // 由 <span> 改为 <button>，重置默认边框
+        padding: 0;
         border-radius: 50%;
         background: transparent;
         transition: transform 0.2s, opacity 0.2s;

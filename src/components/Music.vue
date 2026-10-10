@@ -181,6 +181,7 @@ import {
 import Player from "@/components/Player.vue";
 import { mainStore } from "@/store";
 import { showMessage } from "@/utils/message.js";
+import { isMobileWidth } from "@/constants/breakpoint";
 const store = mainStore();
 
 // 音量条数据
@@ -371,7 +372,7 @@ const showMiniPlayer = computed(
 // 窄视口（≤720px，与样式断点一致）下禁用悬停展开：桌面浏览器缩窄窗口时
 // pointerType 仍是 mouse，需按视口宽度兜底，移动端只保留点击打开面板
 const miniHover = ref(false);
-const isMobileViewport = () => window.matchMedia("(max-width: 720px)").matches;
+const isMobileViewport = () => isMobileWidth(window.innerWidth);
 const onMiniEnter = (e) => {
   if (e.pointerType === "mouse" && !isMobileViewport()) miniHover.value = true;
 };
@@ -881,7 +882,7 @@ watch(
   }
 
   // 移动端自适应
-  @media (max-width: 480px) {
+  @media (max-width: $bp-sm) {
     width: 86vw;
     max-width: 86vw;
     padding: 26px 20px 18px;
@@ -1031,7 +1032,7 @@ watch(
   transform: translateX(-40px) scale(0.96);
 }
 // 移动端：位移幅度减半，避免小屏上滑出感过重
-@media (max-width: 480px) {
+@media (max-width: $bp-sm) {
   .panel-swap-enter-from {
     transform: translateX(24px) scale(0.97);
   }
@@ -1209,7 +1210,7 @@ watch(
   }
 
   // 移动端：无悬停，保持收起态图标，点击直接打开面板
-  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+  @include mobile-viewport {
     right: 16px;
     top: 59px; // 移动端无汉堡菜单时兜底
 
@@ -1256,7 +1257,7 @@ watch(
   border-radius: 28px;
   overflow: hidden;
 
-  @media (max-width: 480px) {
+  @media (max-width: $bp-sm) {
     width: 90vw;
     max-width: 90vw;
     height: 72vh;

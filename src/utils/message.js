@@ -1,5 +1,6 @@
 import { ElMessage } from "element-plus";
 import "element-plus/es/components/message/style/css";
+import { BP_MD } from "@/constants/breakpoint";
 
 /**
  * 消息弹窗工具函数
@@ -7,10 +8,9 @@ import "element-plus/es/components/message/style/css";
  * Element Plus 会自动处理多条消息的垂直堆叠排列，不会重叠
  */
 const MESSAGE_OFFSET = 80;
-const MOBILE_BREAKPOINT = 720;
 
 const getOffset = () => {
-  return window.innerWidth <= MOBILE_BREAKPOINT ? 70 : MESSAGE_OFFSET;
+  return window.innerWidth <= BP_MD ? 70 : MESSAGE_OFFSET;
 };
 
 /**

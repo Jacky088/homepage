@@ -158,7 +158,7 @@ onMounted(() => {
     }
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: $bp-md) {
     max-width: 92vw;
     padding: 16px 16px;
     .content {

@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { isMobileWidth } from "@/constants/breakpoint";
 
 export const mainStore = defineStore("main", {
   state: () => {
@@ -13,10 +14,8 @@ export const mainStore = defineStore("main", {
       musicOpenState: false, // 音乐面板开启状态
       backgroundShow: false, // 壁纸展示状态
       mobileOpenState: false, // 移动端开启状态
-      mobileFuncState: false, // 移动端功能区开启状态
       navCollapsed: false, // 顶部导航是否折叠为汉堡菜单（横排放不下时）
       setOpenState: false, // 设置页面开启状态
-      weatherOpenState: false, // 天气面板开启状态
       capsuleOpenState: false, // 时光胶囊彩蛋开启状态
       playerState: false, // 当前播放状态
       playerTitle: null, // 当前播放歌曲名
@@ -51,22 +50,17 @@ export const mainStore = defineStore("main", {
     // 更改当前页面宽度
     setInnerWidth(value) {
       this.innerWidth = value;
-      if (value >= 720) {
+      if (!isMobileWidth(value)) {
         this.mobileOpenState = false;
-        this.mobileFuncState = false;
       }
     },
     // 设置顶部导航是否折叠为汉堡菜单
     setNavCollapsed(value) {
       this.navCollapsed = value;
     },
-    // 更改播放状态
-    setPlayerState(value) {
-      if (value) {
-        this.playerState = false;
-      } else {
-        this.playerState = true;
-      }
+    // 更改播放状态（传入 audio.paused，取反即为「是否在播放」）
+    setPlayerState(paused) {
+      this.playerState = !paused;
     },
     // 更改歌词
     setPlayerLrc(value) {

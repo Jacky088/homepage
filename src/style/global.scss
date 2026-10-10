@@ -1,5 +1,17 @@
 // scss 全局变量
 
+// 响应式断点（JS 侧同名常量见 src/constants/breakpoint.js，改动请两边同步）
+// 口径：宽度 <= $bp-md 视为移动端
+$bp-md: 720px;
+$bp-sm: 480px;
+
+// 真触屏设备（移动端复合断点：≤$bp-md 且为粗指针触屏，或任意设备 ≤$bp-sm）
+@mixin mobile-viewport {
+  @media (max-width: $bp-md) and (hover: none) and (pointer: coarse), (max-width: $bp-sm) {
+    @content;
+  }
+}
+
 // 响应式布局
 @mixin changeWidth($maxWidth: 1200px) {
   .container {
@@ -27,8 +39,8 @@
   @include changeWidth($maxWidth: 900px);
 }
 
-/* 小于720px时 */
-@media (max-width: 720px) {
+/* 小于 $bp-md 时 */
+@media (max-width: $bp-md) {
   // 隐藏元素
   .xs-hidden {
     display: none;

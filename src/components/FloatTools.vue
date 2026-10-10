@@ -97,7 +97,7 @@ const toggleBackground = () => {
     }
   }
 
-  @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+  @include mobile-viewport {
     right: 16px;
     top: 11px; // 移动端无汉堡菜单时兜底居中
 

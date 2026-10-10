@@ -11,7 +11,7 @@
         @mouseenter="socialTip = item.tip"
         @mouseleave="socialTip = '通过这里联系我'"
       >
-        <img class="icon" :src="item.icon" height="24" />
+        <img class="icon" :src="item.icon" height="24" :alt="item.name" />
       </a>
     </div>
     <span class="tip">{{ socialTip }}</span>
@@ -71,7 +71,7 @@ const socialTip = ref("通过这里联系我");
       }
     }
   }
-  @media (max-width: 720px) {
+  @media (max-width: $bp-md) {
     justify-content: center;
   }
 }

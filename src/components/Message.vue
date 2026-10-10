@@ -95,7 +95,7 @@ const siteUrl = computed(() => {
       }
     }
 
-    @media (max-width: 720px) and (hover: none) and (pointer: coarse), (max-width: 480px) {
+    @include mobile-viewport {
       .logo-img {
         width: 38px;
         height: 38px;

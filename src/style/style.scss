@@ -46,6 +46,15 @@ a:hover {
   text-decoration: underline;
 }
 
+// 用 <button> 承载交互（汉堡菜单 / 关闭按钮），重置 UA 默认字体，
+// 边框与背景由各组件自身的类（.glass-pill / .capsule-close 等）控制
+button {
+  font: inherit;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
 // 字体文件
 @font-face {
   font-family: "Pacifico-Regular";
@@ -399,4 +408,35 @@ scrollbar-thumb {
       rgba(14, 16, 22, 0.52);
     border-color: rgba(255, 255, 255, 0.25);
   }
+}
+
+/*
+ * 可访问性
+ *
+ * 注意：这些规则必须放在 style.scss（main.js 引入的全局样式表），
+ * 不能放进 global.scss——后者通过 vite 的 additionalData 注入到每个组件的
+ * <style scoped> 块里，会把选择器变成 .xxx[data-v-xxx] 并重复输出十几份。
+ */
+
+// 尊重系统「减少动态效果」设置：前庭功能障碍用户对入场动画敏感，
+// 这里把全站动画/过渡时长压到接近 0（保留极短时长以维持过渡回调正常触发）
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// 正文内容允许选中复制（全局的 user-select: none 会让一言等文本无法选中）
+.hitokoto,
+.set,
+.drawer-title,
+.grid-name,
+.capsule-panel {
+  user-select: text;
+  -webkit-user-select: text;
 }
