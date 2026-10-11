@@ -43,12 +43,34 @@ const isAllowedJsonpUrl = (rawUrl) => {
 const toHttps = (url) => (typeof url === "string" ? url.replace(/^http:\/\//, "https://") : url);
 
 /**
- * 获取音乐播放列表（你已有代码，保留即可）
+ * 内置备用接口：未配置自定义接口时直接使用它，
+ * 配置了则先用自定义接口，失败（超时 / 非 2xx / 数据不合规）才降级到这里。
+ * 换成别的备用接口时，记得同步放行 index.html 里的 CSP connect-src。
  */
-export const getPlayerList = async (server, type, id) => {
-  const res = await fetch(
-    `${import.meta.env.VITE_SONG_API}?server=${server}&type=${type}&id=${id}`,
-  );
+const DEFAULT_SONG_API = "https://api.injahow.cn/meting/";
+
+// 单次歌单请求超时：接口挂起时必须能及时降级，否则播放器会一直转圈
+const SONG_API_TIMEOUT = 8000;
+
+/**
+ * 请求单个 Meting 接口并整理成播放器可用的结构
+ * 任何一步不合规都直接抛错，由 getPlayerList 决定是否降级
+ */
+const fetchSongList = async (apiBase, server, type, id) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SONG_API_TIMEOUT);
+  let res;
+  try {
+    res = await fetch(`${apiBase}?server=${server}&type=${type}&id=${id}`, {
+      signal: controller.signal,
+    });
+  } catch (err) {
+    // 超时与网络错误都归到“接口不可用”，交给上层降级
+    throw new Error(err?.name === "AbortError" ? "请求超时" : "网络请求失败");
+  } finally {
+    clearTimeout(timer);
+  }
+
   if (!res.ok) {
     throw new Error(`歌曲接口请求失败，状态码：${res.status}`);
   }
@@ -89,15 +111,39 @@ export const getPlayerList = async (server, type, id) => {
       cover: v.cover || v.pic,
       lrc: v.lrc,
     }));
-  } else {
-    return data.map((v) => ({
-      name: v.name || v.title,
-      artist: v.artist || v.author,
-      url: toHttps(v.url),
-      cover: v.cover || v.pic,
-      lrc: v.lrc,
-    }));
   }
+
+  return data.map((v) => ({
+    name: v.name || v.title,
+    artist: v.artist || v.author,
+    url: toHttps(v.url),
+    cover: v.cover || v.pic,
+    lrc: v.lrc,
+  }));
+};
+
+/**
+ * 获取音乐播放列表：优先自定义接口，无效则自动降级到内置备用接口
+ */
+export const getPlayerList = async (server, type, id) => {
+  const custom = (import.meta.env.VITE_SONG_API || "").trim().replace(/\/+$/, "");
+  const fallback = DEFAULT_SONG_API.replace(/\/+$/, "");
+  // 自定义接口没填、或填的和备用接口重复时，只请求一次
+  const candidates = [custom, fallback].filter(
+    (base, i, arr) => base && arr.indexOf(base) === i,
+  );
+
+  const failures = [];
+  for (const apiBase of candidates) {
+    try {
+      return await fetchSongList(apiBase, server, type, id);
+    } catch (err) {
+      failures.push(`${apiBase} → ${err.message}`);
+      console.warn(`[music] 歌单接口不可用，${err.message}`, apiBase);
+    }
+  }
+
+  throw new Error(`歌单接口全部不可用：${failures.join("；")}`);
 };
 
 /**

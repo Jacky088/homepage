@@ -52,7 +52,7 @@ const writeCache = (data) => {
 const cached = readCache();
 const hitokotoData = reactive({
   text: cached ? cached.text : "这里应该显示一句话",
-  from: cached ? cached.from : "無名",
+  from: cached ? cached.from : "佚名",
   hasFrom: cached ? cached.hasFrom : true,
 });
 

@@ -19,7 +19,7 @@
         <div class="version">
           <div class="num">v&nbsp;{{ config.version }}</div>
           <el-tooltip content="Github 源代码仓库" placement="right" :show-arrow="false">
-            <github-one class="github" theme="outline" size="24" @click="jumpTo(config.github)" />
+            <github-one class="github" theme="outline" size="24" @click="jumpTo(siteGithub)" />
           </el-tooltip>
         </div>
         <el-card class="update">
@@ -60,10 +60,13 @@ import config from "@/../package.json";
 const store = mainStore();
 const closeShow = ref(false);
 
+// 源码仓库地址（走环境变量，未配置时用 example 占位，避免把真实仓库写死在代码里）
+const siteGithub = import.meta.env.VITE_SITE_GITHUB || "https://github.com/example/homepage";
+
 // 站点链接
 const siteUrl = computed(() => {
   const url = import.meta.env.VITE_SITE_URL;
-  if (!url) return "huzz.cn".split(".");
+  if (!url) return "example.com".split(".");
   // 判断协议前缀
   if (url.startsWith("http://") || url.startsWith("https://")) {
     const urlFormat = url.replace(/^(https?:\/\/)/, "");

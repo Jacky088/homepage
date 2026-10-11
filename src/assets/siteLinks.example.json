@@ -1,0 +1,37 @@
+[
+  {
+    "icon": "Blog",
+    "name": "示例博客",
+    "link": "https://blog.example.com/"
+  },
+  {
+    "icon": "Compass",
+    "name": "示例导航",
+    "link": "https://nav.example.com/"
+  },
+  {
+    "icon": "Terminal",
+    "name": "示例状态页",
+    "link": "https://status.example.com/"
+  },
+  {
+    "icon": "Github",
+    "name": "示例仓库",
+    "link": "https://github.com/example/homepage"
+  },
+  {
+    "icon": "Cloud",
+    "name": "示例网盘",
+    "link": "https://drive.example.com/"
+  },
+  {
+    "icon": "Image",
+    "name": "示例图床",
+    "link": "https://img.example.com/"
+  },
+  {
+    "icon": "Fire",
+    "name": "音乐",
+    "link": "https://example.com/music"
+  }
+]

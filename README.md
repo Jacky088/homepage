@@ -11,7 +11,7 @@
 - 响应式布局，适配 PC 和移动端
 - 动态视频 / 图片壁纸背景，支持切换
 - 一言（Hitokoto）随机句子展示
-- 时光胶囊彩蛋：点击左上角 Logo 查看（今日/本周/本月/本年进度）
+- 时光胶囊彩蛋
 - 网站快捷链接导航
 - 社交链接展示
 - 音乐播放器（网易云 / QQ音乐）
@@ -78,20 +78,26 @@ pnpm preview
 项目通过环境变量配置，分两类：`VITE_` 开头的会**注入前端产物**，其余仅在**服务端**使用。`.env` 不在仓库中，配置方式按使用场景选择：
 
 - **本地开发 / 静态构建 / Docker**：复制 `.env.example` 为 `.env`，按需修改；
-- **托管平台**：在平台控制台添加环境变量（首选，改配置无需提交代码），或把 `.env` 提交进仓库（**切勿在其中存放密钥**）。注意：平台控制台里配置的**服务端变量**（如 `UAPI_KEY`）不会被静态构建读取，仅供 Serverless Function 使用，因此必须配在平台上。
+- **托管平台**：在平台控制台添加环境变量，或把 `.env` 提交进仓库（**切勿在其中存放密钥**）。
 
 > **优先级提示**：若同一个变量在 `.env` 文件和云平台控制台**都配置了值**，以 **云平台环境变量** 为准。
+>
+> **构建防卫**：`pnpm build` 开始前会校验 11 个必需变量（站点信息 8 个，加 `VITE_SONG_SERVER`、`VITE_SONG_TYPE`、`VITE_UAPI_BASE`），任一为空即中止构建，并打印缺失清单与修复步骤；`VITE_SONG_API`、`VITE_SONG_ID`、`VITE_SITE_START`、`VITE_SITE_ICP`、`VITE_WEATHER_KEY`、`VITE_AMAP_BASE` 允许留空（其中 `VITE_SONG_API` 留空时播放器直接使用内置备用音乐接口），`pnpm dev` 遇到同样问题只打印警告、不阻断启动。
 
 | 变量名 | 说明 | 示例 |
 | --- | --- | --- |
 | VITE_SITE_NAME | 站点名称 | xx的主页 |
 | VITE_SITE_AUTHOR | 作者名 | xx |
+| VITE_SITE_KEYWORDS | 站点关键词 | xx,个人主页 |
+| VITE_SITE_DES | 站点简介 | 一个示例站点 |
 | VITE_SITE_URL | 站点域名 | example.com |
 | VITE_SITE_LOGO | 站点图标路径 | /images/icon/favicon.ico |
 | VITE_SITE_MAIN_LOGO | 主页 Logo 图片 | /images/icon/logo.png |
+| VITE_SITE_APPLE_LOGO | Apple 端图标路径 | /images/icon/apple-touch-icon.png |
+| VITE_SITE_GITHUB | 源码仓库地址（更多设置面板的 GitHub 按钮，可选） | `https://github.com/xx/xx` |
 | VITE_SITE_START | 建站日期 | 20XX |
 | VITE_SITE_ICP | ICP 备案号（可选） | xICP备xxxxx号 |
-| VITE_SONG_API | 音乐 API 地址 | https://example.com/api |
+| VITE_SONG_API | 自建音乐 API 地址（可选，留空则使用内置备用接口） | `https://example.com/api` |
 | VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
 | VITE_SONG_TYPE | 播放类型 | playlist |
 | VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
@@ -102,8 +108,12 @@ pnpm preview
 
 ### 自定义链接
 
-- 网站链接：编辑 `src/assets/siteLinks.json`
-- 社交链接：编辑 `src/assets/socialLinks.json`
+- 网站链接：编辑 `src/assets/siteLinks.json`，模板见 `src/assets/siteLinks.example.json`
+  - 字段：`icon` 图标名、`name` 显示名称、`link` 跳转地址（仅接受 `http`/`https`）
+  - 新增图标需在 `src/components/Links.vue` 里引入并加进 `siteIcon`
+  - 数组为空时，顶栏导航整条隐藏
+- 社交链接：编辑 `src/assets/socialLinks.json`，模板见 `src/assets/socialLinks.example.json`
+  - 字段：`name` 名称、`icon` 图片路径（放在 `public/images/icon/` 下）、`tip` 悬停提示、`url` 跳转地址（支持 `mailto:`）
 
 ### 音乐播放器
 
@@ -111,30 +121,30 @@ pnpm preview
 
 **配置步骤：**
 
-1. 部署 Meting API 服务（参考 [Meting-API](https://github.com/xizeyoupan/Meting-API#deno-deploy)）
-2. 在 `.env` 中填写 `VITE_SONG_API` 为你的 API 地址
-3. 设置 `VITE_SONG_SERVER` 为音乐平台（`netease` 或 `tencent`）
-4. 设置 `VITE_SONG_ID` 为歌单 ID（网易云歌单 ID 可从歌单 URL 中获取）
-5. 若不需要播放器，将 `VITE_SONG_ID` 设为空即可
+1. （可选）部署自己的 Meting API 服务（参考 [Meting-API](https://github.com/xizeyoupan/Meting-API#deno-deploy)），在 `.env` 中填写 `VITE_SONG_API`；留空则直接使用内置备用接口
+2. 设置 `VITE_SONG_SERVER` 为音乐平台（`netease` 或 `tencent`）
+3. 设置 `VITE_SONG_ID` 为歌单 ID（网易云歌单 ID 可从歌单 URL 中获取）
+4. 若不需要播放器，将 `VITE_SONG_ID` 设为空即可
 
 **注意事项：**
 - QQ 音乐歌单建议不超过 50 首
-- 如果 API 不通或网络异常，播放器会自动提示初始化失败并禁用入口
-- 备用 API：`https://api.wuenci.com/meting/api/`
+- 接口降级：优先请求 `VITE_SONG_API`，超时（8 秒）、非 2xx 或数据不合规时自动降级到内置备用接口 `https://api.injahow.cn/meting/`。两个都不可用时播放器提示初始化失败并禁用入口，降级原因可在浏览器控制台的 `[music]` 日志里看到
+- 自定义接口必须在 `index.html` 的 CSP `connect-src` 中放行该域名，否则歌单请求会被浏览器直接拦截
+- 私人接口域名：在本地 `.env` 里配 `VITE_SONG_API_PROXY = "https://你的接口地址/api"`，并把 `VITE_SONG_API` 设为 `/api/song`，歌单请求会走 dev server 的同源代理
 
 ### 天气显示
 
-顶栏右上角会展示当前城市及天气状况（图标 + 城市 + 天气 + 温度），点击可展开查看天气详情（风向、风力）。
+顶栏右上角会展示当前城市及天气状况，点击可展开查看天气详情。
 
 **数据来源（三级降级链）：**
 
 | 顺序 | 数据源 | 说明 |
 | --- | --- | --- |
-| 1 | [uapis 天气](https://uapis.cn/docs/api-reference/get-misc-weather) | **主源**。前端不传城市，由代理按**访客真实 IP** 定位城市后再取天气（见下文），国内 CDN 直连稳定 |
+| 1 | [uapis 天气](https://uapis.cn/docs/api-reference/get-misc-weather) | **主源**。前端不传城市，由代理按**访客真实 IP** 定位城市后再取天气，国内 CDN 直连稳定 |
 | 2 | 高德天气 | 降级源。仅当配置了 `VITE_WEATHER_KEY` / `VITE_AMAP_BASE` 时参与 |
 | 3 | ipinfo.io / ipapi.co + wttr.in | 最终兜底。境外免费服务，国内网络可能不可达 |
 
-任一环节失败会自动降级到下一源，全部失败时右上角显示「天气获取失败」，点击可重试。所有外部请求均带 8s 超时，不会出现长时间停留在「定位中…」的情况。
+任一环节失败会自动降级到下一源，全部失败时右上角显示「天气获取失败」，点击可重试。
 
 **API Key 不会进入前端产物：**
 
@@ -149,24 +159,23 @@ pnpm preview
 
 `UAPI_KEY` 没有 `VITE_` 前缀，因此**不会被打进前端 JS**。
 
-**服务端为什么还要多做一步 IP 反查：**
+**服务端为什么要多做一步 IP 反查：**
 
 uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**。请求经 Serverless 函数 / 反向代理转发后，来源 IP 变成了机房 IP（实测 Vercel 机房 IP 会直接返回 `LOCATION_NOT_FOUND`，前端表现就是「天气定位失败」）。所以 `api/weather.js` 会先从 `x-forwarded-for` 取出**访客真实 IP**，再用 uapis 的 `/api/v1/network/ipinfo` 反查出中文城市名，最后带着 `city` 去查天气。
 
-> ⚠️ 不要改用 Vercel 的 `x-vercel-ip-city` 请求头，它给的是英文城市名，而 uapis 对英文名匹配不可靠（实测 `Wuxi` 命中「重庆巫溪县」、`Suzhou` 命中「安徽宿州市」），会静默返回**错误城市**的天气，比失败更难发现。
+> ⚠️ 不要改用 Vercel 的 `x-vercel-ip-city` 请求头，它给的是英文城市名，而 uapis 对英文名匹配不可靠（实测 `Wuxi` 命中「重庆巫溪县」、`Suzhou` 命中「安徽宿州市」），会静默返回**错误城市**的天气。
 
 **其他部署方式：**
 - **EdgeOne Pages**：函数源码放在 `functions/` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js`，对应 `/uapi/weather`，前端无需改任何配置；只需在项目设置里配好 `UAPI_KEY`，并确认项目启用了 Functions。
-- **Docker / nginx**：**不能只做简单反代**——反代之后 uapis 看到的仍是服务器出口 IP，会踩上面同一个坑。需按同样逻辑先反查访客 IP 归属地再查天气；更省事的做法是把 `VITE_UAPI_BASE` 指向一个已部署好的代理（Vercel 函数 / EdgeOne 边缘函数 / Cloudflare Worker）。
 - **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的结构实现同协议的 `/weather` 接口（同样需要按访客 IP 反查城市），再配置 `VITE_UAPI_BASE`；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
 
-> ⚠️ **各平台的配置互不通用**：Vercel 读的是 `api/` + `vercel.json`，EdgeOne Pages 读的是 `functions/` + `edgeone.json`。只带其中一份配置部署到另一个平台时，`/uapi/weather` 就没有任何处理器，请求会落到静态资源并 404，天气直接失败（这正是首次部署到 EdgeOne 时报「天气定位失败」的原因）。
+> ⚠️ **各平台的配置互不通用**：Vercel 读的是 `api/` + `vercel.json`，EdgeOne Pages 读的是 `functions/` + `edgeone.json`。只带其中一份配置部署到另一个平台时，`/uapi/weather` 就没有任何处理器，请求会落到静态资源并 404，天气直接失败。
 
 **说明：**
 - 天气定位精度为**城市级**（按 IP 自动识别当前所在城市）。
 - 在 [uapis.cn](https://uapis.cn/) 注册可获取 API Key；不配置也能用，但走的是全网共享的匿名游客额度（1500 credits / 30 天），容易被他人耗尽。
 - **可选**：在 [高德开放平台](https://console.amap.com/) 注册 **Web 服务 Key** 填入 `VITE_WEATHER_KEY` 作为降级源。
-- 缓存策略：调用方显式传 `city`（与访客无关）时响应带 `s-maxage=300`，走 CDN 共享缓存降低额度消耗；由访客 IP 解析出的城市因人而异，仅返回 `private, max-age=60`，避免把 A 城市的天气发给 B 城市的访客。
+- 缓存策略：调用方显式传 `city` 时响应带 `s-maxage=300`，走 CDN 共享缓存降低额度消耗；由访客 IP 解析出的城市因人而异，仅返回 `private, max-age=60`，避免把 A 城市的天气发给 B 城市的访客。
 - 示例函数 `api/weather.js` 支持可选的 `ALLOWED_ORIGIN` 环境变量（逗号分隔），配置后仅允许指定来源调用，防止函数被他人当作免费接口盗刷。
 
 ## 部署
@@ -179,7 +188,7 @@ uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**
 | 静态文件构建 | 自有服务器 / 任意静态托管 | 本地配置 `.env` 后构建，上传 `dist/` | 需自备代理 |
 | Docker | 自有服务器，容器化运行 | 本地配置 `.env` 后构建镜像 | 需在 nginx 中反代 |
 
-> **⚠️ 重要**：`.env` 不在 Git 仓库中，托管平台的构建环境默认**没有任何 `VITE_*` 变量**。不先配置变量会导致构建失败（`URIError: URI malformed`）。各平台配置方法见下文，变量说明见 [配置说明](#配置说明)。
+> **⚠️ 重要**：`.env` 不在 Git 仓库中，托管平台的构建环境默认**没有任何 `VITE_*` 变量**。不先配置变量会导致构建失败，变量说明见 [配置说明](#配置说明)。
 
 ### 托管平台部署（Vercel / Cloudflare Pages / EdgeOne）
 
@@ -235,13 +244,13 @@ docker-compose up -d   # 端口 12445
 
 运行镜像基于 `nginx:alpine`，已内置缓存策略与 PWA 响应头（`sw.js` 不缓存、带 hash 资源长缓存、gzip）。
 
-> **⚠️ 天气代理**：镜像里只有静态产物，没有 Serverless Function，因此 `/uapi/weather` 需要在 `nginx.conf` 中自行反代到 `https://uapis.cn/api/v1/misc/weather` 并注入 `X-API-Key` 请求头（Key 用环境变量 + `envsubst` 注入，不要写死在配置里）。未反代时天气主源不可用，会逐级降级到高德 / 境外接口，可能显示「天气获取失败」。
+> **⚠️ 天气代理**：镜像里只有静态产物，没有 Serverless Function，因此 `/uapi/weather` 需要在 `nginx.conf` 中自行反代到 `https://uapis.cn/api/v1/misc/weather` 并注入 `X-API-Key` 请求头。未反代时天气主源不可用，会逐级降级到高德 / 境外接口，可能显示「天气获取失败」。
 
 ### Cloudflare Worker（高德 API 代理，可选）
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Jacky088/homepage)
 
-使用高德天气 Key 且不想将其暴露在前端产物中时，可部署代理 Worker。由于代理脚本位于 `worker/amap-proxy.js` 子目录，一键部署后需将 Worker 脚本内容替换为该文件内容（或本地执行 `wrangler deploy worker/amap-proxy.js`），然后：
+使用高德天气 Key 且不想将其暴露在前端产物中时，可部署代理 Worker。
 
 1. 在 Worker 的 Settings → Variables 中添加 `AMAP_KEY`（高德 Web 服务 Key），可选配 `ALLOWED_ORIGIN` 限制调用来源；
 2. 为 Worker 绑定路由或自定义域（如 `https://你的域名/amap/*`）；
