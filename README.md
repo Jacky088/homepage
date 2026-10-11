@@ -131,8 +131,12 @@ pnpm preview
 **注意事项：**
 - QQ 音乐歌单建议不超过 50 首
 - 接口降级：优先请求 `VITE_SONG_API`，超时（8 秒）、非 2xx 或数据不合规时自动降级到内置备用接口 `https://api.injahow.cn/meting/`。两个都不可用时播放器提示初始化失败并禁用入口，降级原因可在浏览器控制台的 `[music]` 日志里看到
-- 自定义接口必须在 `index.html` 的 CSP `connect-src` 中放行该域名，否则歌单请求会被浏览器直接拦截
-- 私人接口域名：在本地 `.env` 里配 `VITE_SONG_API_PROXY = "https://你的接口地址/api"`，并把 `VITE_SONG_API` 设为 `/api/song`，歌单请求会走 dev server 的同源代理
+- 自定义接口的接入方式（二选一）：
+  - **公开接口**：地址直接填进 `VITE_SONG_API`，同时要在 `index.html` 的 CSP `connect-src` 中放行该域名，否则歌单请求会被浏览器拦截——代价是这个地址会随仓库公开
+  - **私人接口**：改走同源代理，地址只存在服务端，既不进仓库、也不用改 CSP
+    - 本地开发：`.env` 里填 `VITE_SONG_API_PROXY = "https://你的接口地址/api"`，`VITE_SONG_API` 设为 `/api/song`（走 dev server 代理）
+    - Vercel：环境变量里填 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀，它不会进前端产物），`VITE_SONG_API` 设为 `/api/song`（走 `api/song.js`）
+- 代理或接口失效时，前端会自动降级到内置备用接口，播放器不会直接报错
 
 ### 天气显示
 
