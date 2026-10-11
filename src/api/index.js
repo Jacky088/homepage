@@ -43,6 +43,29 @@ const isAllowedJsonpUrl = (rawUrl) => {
 const toHttps = (url) => (typeof url === "string" ? url.replace(/^http:\/\//, "https://") : url);
 
 /**
+ * 规范化歌词地址：
+ * 1. 若当前走的是同源代理（如 apiBase 为 /api/song 等相对路径），
+ *    上游 Meting 返回的 lrc 通常带有上游完整域名（如 https://upstream/api?server=...&type=lrc&id=...）。
+ *    若原样返回，前端 APlayer 直连上游会被 CSP 拦截且暴露私人域名；
+ *    提取其 query 参数改写为走同源代理 `${apiBase}${parsed.search}`。
+ * 2. 若直接配置外部域名，统一升级为 HTTPS，避免混合内容拦截。
+ */
+const normalizeLrc = (lrcUrl, apiBase) => {
+  if (!lrcUrl || typeof lrcUrl !== "string") return lrcUrl;
+  if (apiBase && apiBase.startsWith("/")) {
+    try {
+      const parsed = new URL(lrcUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      if (parsed.search) {
+        return `${apiBase}${parsed.search}`;
+      }
+    } catch {
+      // 保持原样
+    }
+  }
+  return toHttps(lrcUrl);
+};
+
+/**
  * 内置备用接口：未配置自定义接口时直接使用它，
  * 配置了则先用自定义接口，失败（超时 / 非 2xx / 数据不合规）才降级到这里。
  * 换成别的备用接口时，记得同步放行 index.html 里的 CSP connect-src。
@@ -118,7 +141,7 @@ const fetchSongList = async (apiBase, server, type, id) => {
       artist: v.artist || v.author,
       url: toHttps(domain + jsonpData.req_0.data.midurlinfo[i].purl),
       cover: v.cover || v.pic,
-      lrc: v.lrc,
+      lrc: normalizeLrc(v.lrc, apiBase),
     }));
   }
 
@@ -127,7 +150,7 @@ const fetchSongList = async (apiBase, server, type, id) => {
     artist: v.artist || v.author,
     url: toHttps(v.url),
     cover: v.cover || v.pic,
-    lrc: v.lrc,
+    lrc: normalizeLrc(v.lrc, apiBase),
   }));
 };
 

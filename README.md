@@ -104,7 +104,7 @@ pnpm preview
 | VITE_SONG_TYPE | 播放类型 | playlist |
 | VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
 | VITE_SONG_API_PROXY | 本地开发时 `/api/song` 的上游地址（可选，只写在本地 `.env`） | `https://example.com/api` |
-| SONG_API_UPSTREAM | **服务端**变量，Vercel 上 `/api/song` 的上游地址（**不要**加 `VITE_` 前缀） | `https://example.com/api` |
+| SONG_API_UPSTREAM | **服务端**变量，Vercel / EdgeOne Pages 上 `/api/song` 的上游地址（**不要**加 `VITE_` 前缀） | `https://example.com/api` |
 | VITE_WEATHER_KEY | 高德 Web 服务 Key（可选，作为降级源） | xxxxxxxx |
 | VITE_AMAP_BASE | 高德 API 代理地址（可选，留空直连官方） | https://example.com/amap |
 | VITE_UAPI_BASE | 天气代理路径（前端使用，默认 `/uapi`） | /uapi |
@@ -144,7 +144,7 @@ pnpm preview
 | 接法 | 前端 `VITE_SONG_API` | 上游地址写在哪 | 是否要改 CSP |
 | --- | --- | --- | --- |
 | 公开接口 | `https://你的接口地址/api` | 仓库里（等于公开） | 要，需在 `index.html` 的 `connect-src` 放行该域名 |
-| 私人接口 | `/api/song` | 服务端环境变量，不进仓库 | 不用，同源请求走 CSP 的 `'self'` |
+| 私人接口 | `/api/song` | 服务端环境变量，不进仓库 | 不用，同源请求走 CSP 的 `'self'`（歌单与歌词自动走代理） |
 
 私人接口按平台配置（改完记得**重新部署**，环境变量变更不会自动触发构建）：
 
@@ -154,7 +154,7 @@ pnpm preview
 | Vercel | 环境变量 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀，它不会进前端产物） | `VITE_SONG_API = "/api/song"`，走 `api/song.js` |
 | EdgeOne Pages | 环境变量 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀） | `VITE_SONG_API = "/api/song"`，走 `functions/api/song.js` |
 
-两份代理函数逻辑一致，都只转发 `server` / `type` / `id` 三个参数并做白名单校验（平台限 `netease|tencent`、类型限五种、ID 限 `[A-Za-z0-9_-]{1,64}`），防止被当成开放代理去刷你的私人接口；未配置上游或上游超时会返回 5xx，由前端的降级逻辑接管，播放器不会因此报错。
+两份代理函数逻辑一致，都只转发 `server` / `type` / `id` 三个参数并做白名单校验（平台限 `netease|tencent`、类型限 `song|playlist|album|search|artist|lrc` 支持歌单与歌词、ID 限 `[A-Za-z0-9_-]{1,64}`），防止被当成开放代理去刷你的私人接口；未配置上游或上游超时会返回 5xx，由前端的降级逻辑接管，播放器不会因此报错。前端在解析接口返回时，会自动将歌词地址规范化为同源代理路径或 HTTPS，避免被浏览器 CSP 拦截或发生跨域错误。
 
 > ⚠️ **函数目录按平台各放一份，互不通用**：Vercel 只认根目录的 `api/`，EdgeOne Pages 只认 `functions/`（文件即路由）。只带其中一份部署到另一个平台时，`/api/song` 没有处理器，请求会回落到静态资源并返回 `index.html`，前端解析 JSON 失败——控制台 `[music]` 日志里会明确提示「返回的不是 JSON，检查一下 /api/song 这个路径在当前平台是否生效」。
 
@@ -200,7 +200,7 @@ uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**
 - **EdgeOne Pages**：函数源码放在 `functions/` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js`，对应 `/uapi/weather`，前端无需改任何配置；只需在项目设置里配好 `UAPI_KEY`，并确认项目启用了 Functions。
 - **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的结构实现同协议的 `/weather` 接口（同样需要按访客 IP 反查城市），再配置 `VITE_UAPI_BASE`；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
 
-> ⚠️ **各平台的配置互不通用**：Vercel 读的是 `api/` + `vercel.json`，EdgeOne Pages 读的是 `functions/` + `edgeone.json`。只带其中一份配置部署到另一个平台时，`/uapi/weather` 和 `/api/song` 都没有任何处理器，请求会落到静态资源：天气直接失败，播放器则退回内置备用接口。两份函数在仓库里都已内置，不要删掉自己用不到的那份。
+> ⚠️ **各平台的配置互不通用**：Vercel 依赖 `api/` + `vercel.json`（路由重写），EdgeOne Pages 原生识别 `functions/` 目录（文件即路由，无需额外配置文件）。只带其中一份配置部署到另一个平台时，`/uapi/weather` 和 `/api/song` 都没有任何处理器，请求会落到静态资源：天气直接失败，播放器则退回内置备用接口。两份函数在仓库里都已内置，不要删掉自己用不到的那份。
 
 **说明：**
 - 天气定位精度为**城市级**（按 IP 自动识别当前所在城市）。
@@ -215,7 +215,7 @@ uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**
 
 | 方式 | 适合场景 | 配置方式 | 天气 Key |
 | --- | --- | --- | --- |
-| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` | Vercel 可直接用 `api/weather.js` 注入；其他平台需自备代理 |
+| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` | Vercel（`api/`）与 EdgeOne（`functions/`）可直接由内置函数注入；Cloudflare 等纯静态平台需自备 Worker 代理 |
 | 静态文件构建 | 自有服务器 / 任意静态托管 | 本地配置 `.env` 后构建，上传 `dist/` | 需自备代理 |
 | Docker | 自有服务器，容器化运行 | 本地配置 `.env` 后构建镜像 | 需在 nginx 中反代 |
 
@@ -252,7 +252,7 @@ EdgeOne Pages 用的是 `/functions` 目录（文件即路由），仓库已内�
 2. 可选：添加 `ALLOWED_ORIGIN = https://你的域名`；
 3. 确认项目已启用 Functions（`functions/` 目录会被自动识别），推送后重新部署。
 
-> Vercel 与 EdgeOne 的配置互不通用：`api/` + `vercel.json` 只对 Vercel 生效，`functions/` + `edgeone.json` 只对 EdgeOne 生效。只带一份配置部署到另一个平台时，天气接口会是 404。Cloudflare Pages 两者都不支持，需自备 Worker 代理并把 `VITE_UAPI_BASE` 指向它。
+> Vercel 与 EdgeOne 的配置互不通用：Vercel 依赖 `api/` + `vercel.json`，EdgeOne Pages 原生依赖 `functions/` 目录。只带一份配置部署到另一个平台时，天气接口会是 404。Cloudflare Pages 两者都不支持，需自备 Worker 代理并把 `VITE_UAPI_BASE` 指向它。
 
 > 平台控制台的变量优先级高于 `.env` 文件；Node.js 版本无需手动设置（`engines` 字段已声明，Vercel 会自动选用 Node 22+）。
 

@@ -27,7 +27,7 @@ const FETCH_TIMEOUT = 8000;
 
 // Meting 协议允许的取值，超出即拒绝，避免函数被当作开放代理
 const ALLOWED_SERVER = new Set(["netease", "tencent"]);
-const ALLOWED_TYPE = new Set(["song", "playlist", "album", "search", "artist"]);
+const ALLOWED_TYPE = new Set(["song", "playlist", "album", "search", "artist", "lrc"]);
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** 取 query 里唯一合法的值，非法或缺失一律返回 null */
@@ -76,13 +76,14 @@ export default async function handler(req, res) {
   try {
     const upstreamUrl = `${upstream}?server=${encodeURIComponent(server)}&type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
     const upstreamRes = await fetch(upstreamUrl, {
-      headers: { Accept: "application/json" },
+      headers: { Accept: type === "lrc" ? "text/plain, */*" : "application/json" },
       signal: controller.signal,
     });
     const text = await upstreamRes.text();
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    // 歌单随曲目变化，不要让 CDN 缓存旧列表
-    res.setHeader("Cache-Control", upstreamRes.ok ? "public, max-age=60" : "no-store");
+    const defaultContentType = type === "lrc" ? "text/plain; charset=utf-8" : "application/json; charset=utf-8";
+    res.setHeader("Content-Type", upstreamRes.headers.get("content-type") || defaultContentType);
+    // 歌单随曲目变化，缓存较短；歌词相对固定，可延长缓存
+    res.setHeader("Cache-Control", upstreamRes.ok ? (type === "lrc" ? "public, max-age=3600" : "public, max-age=60") : "no-store");
     return res.status(upstreamRes.status).send(text);
   } catch (error) {
     return res.status(502).json({
