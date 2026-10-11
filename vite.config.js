@@ -25,8 +25,9 @@ const REQUIRED_ENV = [
   ["VITE_SITE_APPLE_LOGO", "Apple 端图标（index.html apple-touch-icon）"],
   ["VITE_SONG_SERVER", "音乐服务商 netease / tencent（src/components/Music.vue）"],
   ["VITE_SONG_TYPE", "播放类型 song / playlist / album / artist（src/components/Music.vue）"],
-  ["VITE_UAPI_BASE", "天气代理路径，通常填 /uapi（src/api/index.js）"],
-  // VITE_SONG_API 不在必需列表里：留空时播放器会直接使用内置备用接口
+  // 不列入必需：
+  // - VITE_SONG_API：留空时直接使用内置备用接口
+  // - VITE_UAPI_BASE：代码里已有默认值 "/uapi"（src/api/index.js），Vercel 等平台没配也能跑
 ];
 
 // loadEnv(mode, cwd, "") 会把 process.env 与 .env* 文件合并后再返回，

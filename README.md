@@ -82,7 +82,9 @@ pnpm preview
 
 > **优先级提示**：若同一个变量在 `.env` 文件和云平台控制台**都配置了值**，以 **云平台环境变量** 为准。
 >
-> **构建防卫**：`pnpm build` 开始前会校验 11 个必需变量（站点信息 8 个，加 `VITE_SONG_SERVER`、`VITE_SONG_TYPE`、`VITE_UAPI_BASE`），任一为空即中止构建，并打印缺失清单与修复步骤；`VITE_SONG_API`、`VITE_SONG_ID`、`VITE_SITE_START`、`VITE_SITE_ICP`、`VITE_WEATHER_KEY`、`VITE_AMAP_BASE` 允许留空（其中 `VITE_SONG_API` 留空时播放器直接使用内置备用音乐接口），`pnpm dev` 遇到同样问题只打印警告、不阻断启动。
+> **构建防卫**：`pnpm build` 开始前会校验 10 个必需变量（站点信息 8 个，加 `VITE_SONG_SERVER`、`VITE_SONG_TYPE`），任一为空即中止构建，并打印缺失清单与修复步骤；`VITE_SONG_API`、`VITE_UAPI_BASE`、`VITE_SONG_ID`、`VITE_SITE_START`、`VITE_SITE_ICP`、`VITE_WEATHER_KEY`、`VITE_AMAP_BASE` 允许留空（前两个留空时分别使用内置备用音乐接口和默认路径 `/uapi`），`pnpm dev` 遇到同样问题只打印警告、不阻断启动。
+>
+> 各平台取变量的方式不同：**CI 与 Docker** 会先 `cp .env.example .env` 再构建；**Vercel / Cloudflare Pages / EdgeOne** 不读仓库里的 `.env`（已被 `.gitignore` 忽略），所需的 `VITE_` 变量必须配在平台的环境变量里，否则构建会按上面的防卫规则中止。
 
 | 变量名 | 说明 | 示例 |
 | --- | --- | --- |
