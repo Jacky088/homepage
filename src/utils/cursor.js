@@ -1,5 +1,3 @@
-import { isEqual } from "lodash-es";
-
 // 当前活跃的光标实例（cursorInit 幂等，避免重复挂载）
 let mainCursor = null;
 
@@ -59,7 +57,7 @@ class Cursor {
     }
 
     document.body.appendChild((this.scr = document.createElement("style")));
-    this.scr.innerHTML = `* {cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' width='10px' height='10px'><circle cx='4' cy='4' r='4' fill='white' /></svg>") 4 4, auto !important}`;
+    this.scr.innerHTML = `* {cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' width='10px' height='10px'><circle cx='4' cy='4' r='4' fill='white' /></svg>") 4 4, auto;}`;
   }
 
   refresh() {
@@ -138,7 +136,12 @@ class Cursor {
     } else {
       this.pos.prev = this.pos.curr;
     }
-    if (!isEqual(this.pos.curr, this.pos.prev)) {
+    if (
+      this.pos.curr &&
+      this.pos.prev &&
+      (Math.abs(this.pos.curr.x - this.pos.prev.x) > 0.1 ||
+        Math.abs(this.pos.curr.y - this.pos.prev.y) > 0.1)
+    ) {
       this.rafId = requestAnimationFrame(() => this.render());
     }
   }

@@ -4,13 +4,15 @@
     ref="linksRef"
     :class="['links', { 'nav-collapsed': store.navCollapsed }]"
   >
-    <!-- PC: 横排文字链接（带 href 才可聚焦、可用回车激活；真实跳转由 jumpLink 处理） -->
+    <!-- PC: 横排文字链接（支持左键直接跳转、鼠标中键新标签页打开与复制真实链接） -->
     <a
       v-for="item in siteLinks"
       :key="item.name"
       class="link-item"
-      href="#"
-      @click.prevent="jumpLink(item)"
+      :href="item.name === '音乐' && store.musicClick ? '#' : item.link"
+      :target="item.name === '音乐' && store.musicClick ? '_self' : '_blank'"
+      rel="noopener noreferrer"
+      @click="handleLinkClick($event, item)"
     >
       {{ item.name }}
     </a>
@@ -37,8 +39,10 @@
               v-for="item in siteLinks"
               :key="item.name"
               class="grid-item"
-              href="#"
-              @click.prevent="jumpLink(item)"
+              :href="item.name === '音乐' && store.musicClick ? '#' : item.link"
+              :target="item.name === '音乐' && store.musicClick ? '_self' : '_blank'"
+              rel="noopener noreferrer"
+              @click="handleLinkClick($event, item)"
             >
               <div class="grid-icon">
                 <Icon size="22">
@@ -85,22 +89,16 @@ const siteIcon = {
   Image,
 };
 
-// 链接跳转
-const jumpLink = (data) => {
+// 链接跳转处理
+const handleLinkClick = (event, data) => {
   if (data.name === "音乐" && store.musicClick) {
+    event.preventDefault();
     if (typeof $openList === "function") $openList();
-  } else {
-    try {
-      const url = new URL(data.link);
-      if (url.protocol === 'http:' || url.protocol === 'https:') {
-        window.open(data.link, "_blank", "noopener,noreferrer");
-      } else {
-        console.warn('不安全的链接协议:', url.protocol);
-      }
-    } catch (e) {
-      console.error('无效的链接格式:', data.link);
-    }
+    store.mobileOpenState = false;
+    return;
   }
+  // 普通外部链接：浏览器原生按 href 和 target 跳转，并在移动端收起抽屉
+  store.mobileOpenState = false;
 };
 
 // 测量横排导航是否放得下所有网站标题

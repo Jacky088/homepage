@@ -245,9 +245,24 @@ export default ({ mode, command }) => {
         },
       },
       // 视频文件处理优化
-      assetsInlineLimit: 0, // 禁止内联视频等大文件
       rollupOptions: {
         output: {
+          manualChunks: (id) => {
+            if (id.includes("node_modules")) {
+              if (id.includes("element-plus")) {
+                return "vendor-element-plus";
+              }
+              if (id.includes("@icon-park") || id.includes("@vicons")) {
+                return "vendor-icons";
+              }
+              if (id.includes("@worstone/vue-aplayer") || id.includes("aplayer")) {
+                return "vendor-player";
+              }
+              if (id.includes("vue") || id.includes("pinia")) {
+                return "vendor-vue";
+              }
+            }
+          },
           // 视频文件单独输出，不打包进 bundle
           assetFileNames: (assetInfo) => {
             const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi'];
