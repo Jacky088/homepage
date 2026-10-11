@@ -74,7 +74,16 @@ const fetchSongList = async (apiBase, server, type, id) => {
   if (!res.ok) {
     throw new Error(`歌曲接口请求失败，状态码：${res.status}`);
   }
-  const responseData = await res.json();
+
+  // 只放行 JSON：路径在当前平台不存在时（例如只给 Vercel 配了 api/song 却部署到 EdgeOne），
+  // 平台会把请求回落到静态资源并返回 index.html，这里要给出可定位的错误，
+  // 而不是让 JSON 解析异常带着一行莫名其妙的堆栈冒出去
+  let responseData;
+  try {
+    responseData = await res.json();
+  } catch {
+    throw new Error(`歌曲接口返回的不是 JSON，检查一下 ${apiBase} 这个路径在当前平台是否生效`);
+  }
 
   // 处理返回数据格式：可能是 { value: [...] } 或直接是 [...]
   let data = Array.isArray(responseData) ? responseData : responseData.value;
