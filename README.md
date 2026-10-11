@@ -99,10 +99,12 @@ pnpm preview
 | VITE_SITE_GITHUB | 源码仓库地址（更多设置面板的 GitHub 按钮，可选） | `https://github.com/xx/xx` |
 | VITE_SITE_START | 建站日期 | 20XX |
 | VITE_SITE_ICP | ICP 备案号（可选） | xICP备xxxxx号 |
-| VITE_SONG_API | 自建音乐 API 地址（可选，留空则使用内置备用接口） | `https://example.com/api` |
+| VITE_SONG_API | 自定义音乐 API（可选）。留空用内置备用接口；填 `/api/song` 则走同源代理，见下方「音乐播放器」 | `https://example.com/api` |
 | VITE_SONG_SERVER | 音乐服务商 | netease / tencent |
 | VITE_SONG_TYPE | 播放类型 | playlist |
 | VITE_SONG_ID | 歌单 ID（留空则隐藏播放器） | xxxxxxx |
+| VITE_SONG_API_PROXY | 本地开发时 `/api/song` 的上游地址（可选，只写在本地 `.env`） | `https://example.com/api` |
+| SONG_API_UPSTREAM | **服务端**变量，Vercel 上 `/api/song` 的上游地址（**不要**加 `VITE_` 前缀） | `https://example.com/api` |
 | VITE_WEATHER_KEY | 高德 Web 服务 Key（可选，作为降级源） | xxxxxxxx |
 | VITE_AMAP_BASE | 高德 API 代理地址（可选，留空直连官方） | https://example.com/amap |
 | VITE_UAPI_BASE | 天气代理路径（前端使用，默认 `/uapi`） | /uapi |
@@ -119,24 +121,44 @@ pnpm preview
 
 ### 音乐播放器
 
-音乐播放器基于 APlayer，通过 Meting API 获取歌单数据。
+音乐播放器基于 APlayer，歌单数据由 Meting 协议的接口提供。**所有音乐相关变量都可以不配**——留空时播放器直接使用内置备用接口，开箱即用。
 
 **配置步骤：**
 
-1. （可选）部署自己的 Meting API 服务（参考 [Meting-API](https://github.com/xizeyoupan/Meting-API#deno-deploy)），在 `.env` 中填写 `VITE_SONG_API`；留空则直接使用内置备用接口
-2. 设置 `VITE_SONG_SERVER` 为音乐平台（`netease` 或 `tencent`）
-3. 设置 `VITE_SONG_ID` 为歌单 ID（网易云歌单 ID 可从歌单 URL 中获取）
-4. 若不需要播放器，将 `VITE_SONG_ID` 设为空即可
+1. 设置 `VITE_SONG_SERVER`（`netease` 网易云 / `tencent` QQ 音乐）
+2. 设置 `VITE_SONG_TYPE`（`song` / `playlist` / `album` / `search` / `artist`）
+3. 设置 `VITE_SONG_ID`（歌单 ID，可从歌单 URL 中获取）；留空则隐藏播放器
+4. （可选）`VITE_SONG_API`：留空即用内置备用接口；想用自己的接口见下文（自建服务可参考 [Meting-API](https://github.com/xizeyoupan/Meting-API#deno-deploy)）
 
-**注意事项：**
+**接口取数顺序与自动降级：**
+
+| 顺序 | 接口 | 说明 |
+| --- | --- | --- |
+| 1 | `VITE_SONG_API` | 自定义接口。留空则直接使用第 2 级 |
+| 2 | `https://api.injahow.cn/meting/` | 内置备用接口，写死在 `src/api/index.js`（末尾斜杠必带） |
+
+命中以下任一情况即降级到下一级：请求超时（8 秒）、网络错误或被 CSP 拦截、非 2xx、返回为空或格式不合规、首曲 URL 为空、QQ 音乐 JSONP 地址不在白名单内。两级都不可用时，播放器提示「播放器加载失败」并禁用入口，降级原因可在浏览器控制台的 `[music]` 日志里看到。
+
+**自定义接口的两种接法：**
+
+| 接法 | 前端 `VITE_SONG_API` | 上游地址写在哪 | 是否要改 CSP |
+| --- | --- | --- | --- |
+| 公开接口 | `https://你的接口地址/api` | 仓库里（等于公开） | 要，需在 `index.html` 的 `connect-src` 放行该域名 |
+| 私人接口 | `/api/song` | 服务端环境变量，不进仓库 | 不用，同源请求走 CSP 的 `'self'` |
+
+私人接口按平台配置（改完记得**重新部署**，环境变量变更不会自动触发构建）：
+
+| 平台 | 服务端变量 | 前端变量 |
+| --- | --- | --- |
+| 本地开发 | `.env` 中 `VITE_SONG_API_PROXY = "https://你的接口地址/api"` | `VITE_SONG_API = "/api/song"`，走 dev server 同源代理 |
+| Vercel | 环境变量 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀，它不会进前端产物） | `VITE_SONG_API = "/api/song"`，走 `api/song.js` |
+
+`api/song.js` 只转发 `server` / `type` / `id` 三个参数并做白名单校验（平台限 `netease|tencent`、类型限五种、ID 限 `[A-Za-z0-9_-]{1,64}`），防止这个函数被当成开放代理去刷你的私人接口；未配置上游或上游超时会返回 5xx，由前端的降级逻辑接管，播放器不会因此报错。
+
+**其他：**
+
 - QQ 音乐歌单建议不超过 50 首
-- 接口降级：优先请求 `VITE_SONG_API`，超时（8 秒）、非 2xx 或数据不合规时自动降级到内置备用接口 `https://api.injahow.cn/meting/`。两个都不可用时播放器提示初始化失败并禁用入口，降级原因可在浏览器控制台的 `[music]` 日志里看到
-- 自定义接口的接入方式（二选一）：
-  - **公开接口**：地址直接填进 `VITE_SONG_API`，同时要在 `index.html` 的 CSP `connect-src` 中放行该域名，否则歌单请求会被浏览器拦截——代价是这个地址会随仓库公开
-  - **私人接口**：改走同源代理，地址只存在服务端，既不进仓库、也不用改 CSP
-    - 本地开发：`.env` 里填 `VITE_SONG_API_PROXY = "https://你的接口地址/api"`，`VITE_SONG_API` 设为 `/api/song`（走 dev server 代理）
-    - Vercel：环境变量里填 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀，它不会进前端产物），`VITE_SONG_API` 设为 `/api/song`（走 `api/song.js`）
-- 代理或接口失效时，前端会自动降级到内置备用接口，播放器不会直接报错
+- 在 Vercel / Cloudflare Pages 等平台改了环境变量后，必须手动触发一次重新部署，新值才会打进前端产物
 
 ### 天气显示
 
