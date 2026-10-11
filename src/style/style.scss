@@ -123,31 +123,150 @@ button {
   text-overflow: ellipsis;
 }
 
-// 弹窗样式
+// 弹窗样式（全局统一玻璃拟态胶囊，对齐 .glass-pill 视觉规范，适配手机端紧凑字号）
 .el-message {
-  --el-message-bg-color: #00000040 !important;
+  --el-message-bg-color: transparent !important;
   --el-message-text-color: #efefef !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  backdrop-filter: blur(10px) !important;
-  border-radius: 25px !important;
-  border-color: transparent !important;
-  background-color: #00000040 !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 8px 16px !important;
+  --el-message-border-color: transparent !important;
+  --el-message-padding: 0 !important;
+  --el-message-close-size: 14px !important;
+
+  // 基础形态：紧凑水平胶囊
+  position: fixed !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  padding: 0 18px !important;
+  border-radius: 19px !important;
+  box-sizing: border-box !important;
+
+  // 液态玻璃拟态材质（与顶栏天气胶囊、汉堡按钮质感完全一致）
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.06) 40%,
+      rgba(0, 0, 0, 0.28) 100%
+    ),
+    rgba(14, 16, 22, 0.52) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05) !important;
+
+  // PC 端字体与排版
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+  line-height: 1 !important;
   max-width: calc(100vw - 40px) !important;
+  user-select: none;
 
   .el-message__badge {
     display: none !important;
   }
+
+  // 图标尺寸与垂直对齐
+  .el-message__icon {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 8px !important;
+    margin-left: 0 !important;
+    color: #efefef !important;
+    flex-shrink: 0;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    svg {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
+
+  // 状态类型图标的颜色适配
+  &.el-message--warning .el-message__icon {
+    color: #ffd04b !important;
+  }
+  &.el-message--success .el-message__icon {
+    color: #67c23a !important;
+  }
+  &.el-message--error .el-message__icon {
+    color: #f56c6c !important;
+  }
+  &.el-message--info .el-message__icon {
+    color: #efefef !important;
+  }
+
+  // 消息正文内容
   .el-message__content {
+    font-size: 13.5px !important;
+    line-height: 1.4 !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     color: #efefef !important;
+    padding: 0 !important;
+
+    // 严密限制 strong 标签字号：杜绝“夜深了”等问候语在手机上发胖放大
+    strong {
+      font-size: inherit !important;
+      font-weight: 600 !important;
+      color: #fff !important;
+      margin-right: 2px;
+    }
+
+    span {
+      font-size: inherit !important;
+      line-height: inherit !important;
+    }
   }
-  .el-message__icon {
-    color: #efefef !important;
+
+  // 移动端响应式适配（屏幕 <= 720px）
+  @media (max-width: $bp-md) {
+    height: 33px !important;
+    padding: 0 13px !important;
+    border-radius: 17px !important;
+    font-size: 12.5px !important;
+    max-width: calc(100vw - 32px) !important;
+
+    .el-message__icon {
+      font-size: 14px !important;
+      width: 14px !important;
+      height: 14px !important;
+      margin-right: 6px !important;
+    }
+
+    .el-message__content {
+      font-size: 12.5px !important;
+
+      strong {
+        font-size: 12.5px !important;
+      }
+    }
+  }
+
+  // 极窄小屏手机适配（屏幕 <= 380px）
+  @media (max-width: 380px) {
+    height: 31px !important;
+    padding: 0 10px !important;
+    border-radius: 16px !important;
+    font-size: 11.5px !important;
+
+    .el-message__content {
+      font-size: 11.5px !important;
+
+      strong {
+        font-size: 11.5px !important;
+      }
+    }
   }
 }
 
