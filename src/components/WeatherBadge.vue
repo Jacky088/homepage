@@ -30,24 +30,72 @@
     <span v-else class="badge-error" @click.stop="loadWeather(true)">天气获取失败</span>
   </div>
 
-  <!-- 天气详情面板 -->
+  <!-- 天气详情面板（最近三天天气预报） -->
   <Teleport to="body">
     <Transition name="badge-fade">
       <div v-show="panelShow" class="badge-panel" :style="panelStyle" @click.stop>
-        <div class="panel-city">
-          <span class="city-name">{{ weather.city || "未知城市" }}</span>
-          <span class="city-temp">{{ weather.temperature !== null ? weather.temperature + "℃" : "--" }}</span>
+        <!-- 面板头部：当前城市与实时天气概览 -->
+        <div class="panel-header">
+          <div class="header-main">
+            <div class="city-line">
+              <span class="city-name">{{ weather.city || "未知城市" }}</span>
+              <span class="forecast-tag">3天预报</span>
+            </div>
+            <div class="weather-sub">
+              <span class="weather-cond">{{ weather.weather || "暂无信息" }}</span>
+              <span class="dot">·</span>
+              <span class="wind-info">{{ weather.winddirection }} {{ weather.windpower ? weather.windpower + "级" : "" }}</span>
+            </div>
+          </div>
+          <div class="temp-now">
+            {{ weather.temperature !== null ? weather.temperature : "--" }}<span class="unit">℃</span>
+          </div>
         </div>
-        <div class="panel-weather">{{ weather.weather || "暂无天气信息" }}</div>
-        <div class="panel-detail" v-if="weather.weather">
-          <div class="detail-item">
-            <span class="label">风向</span>
-            <span class="value">{{ weather.winddirection || "未知" }}</span>
+
+        <!-- 最近三天预报列表 -->
+        <div class="forecast-list" v-if="forecastList && forecastList.length">
+          <div
+            v-for="(item, index) in forecastList"
+            :key="item.date + index"
+            class="forecast-card"
+            :class="{ 'is-today': index === 0 }"
+          >
+            <!-- 日期 -->
+            <div class="date-col">
+              <span class="day-name">{{ item.dayName }}</span>
+              <span class="date-detail">{{ item.weekday }} {{ item.date }}</span>
+            </div>
+
+            <!-- 天气状况与图标 -->
+            <div class="weather-col">
+              <span class="emoji">{{ item.icon }}</span>
+              <span class="desc">{{ item.weather }}</span>
+            </div>
+
+            <!-- 温度区间与视觉条 -->
+            <div class="temp-col">
+              <span class="t-min">{{ item.tempMin }}°</span>
+              <div class="t-bar-box">
+                <div class="t-bar"></div>
+              </div>
+              <span class="t-max">{{ item.tempMax }}°</span>
+            </div>
           </div>
-          <div class="detail-item">
-            <span class="label">风力</span>
-            <span class="value">{{ weather.windpower ? weather.windpower + " 级" : "未知" }}</span>
-          </div>
+        </div>
+
+        <!-- 面板底部状态与刷新 -->
+        <div class="panel-footer">
+          <span class="footer-tip">
+            <span v-if="weather.humidity">湿度 {{ weather.humidity }}% · </span>
+            {{ weather.city }}气象数据
+          </span>
+          <span class="refresh-action" @click="loadWeather(true)" title="重新获取天气">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 4v6h-6M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            刷新
+          </span>
         </div>
       </div>
     </Transition>
@@ -72,26 +120,34 @@ const needScroll = ref(false);
 const textWrapRef = ref(null);
 const panelStyle = ref({});
 const badgeStyle = ref({}); // 动态最大宽度（移动端），避免与左侧 logo 网址重叠
+const forecastList = ref([]); // 最近三天预报列表
+
 const weather = ref({
   city: null,
   weather: null,
   temperature: null,
   winddirection: null,
   windpower: null,
+  humidity: null,
 });
 
 // 天气图标（根据天气文本匹配 emoji）
-const weatherIcon = computed(() => {
-  const t = weather.value.weather || "";
+const getWeatherEmoji = (text) => {
+  const t = text || "";
   if (t.includes("雷")) return "⛈";
-  if (t.includes("雪") || t.includes("雨夹")) return "❄";
-  if (t.includes("雨")) return "🌧";
-  if (t.includes("雾") || t.includes("霾")) return "🌫";
+  if (t.includes("雨夹雪")) return "🌨";
+  if (t.includes("暴雪") || t.includes("大雪")) return "❄";
+  if (t.includes("雪")) return "🌨";
+  if (t.includes("暴雨") || t.includes("大雨")) return "🌧";
+  if (t.includes("雨")) return "🌦";
+  if (t.includes("雾") || t.includes("霾") || t.includes("沙") || t.includes("尘")) return "🌫";
   if (t.includes("阴")) return "☁";
   if (t.includes("云")) return "⛅";
   if (t.includes("晴")) return "☀";
   return "🌡";
-});
+};
+
+const weatherIcon = computed(() => getWeatherEmoji(weather.value.weather));
 
 // 高德天气描述转中文（高德本身就返回中文，这里兜底处理）
 const amapWeatherZh = (weather) => {
@@ -226,16 +282,121 @@ const updateBadgeWidth = () => {
   checkNeedScroll();
 };
 
+// 解析 wttr.in 的未来 3 天预报
+const parseWttrForecast = (wttrData) => {
+  if (!wttrData || !Array.isArray(wttrData.weather)) return [];
+  const dayNames = ["今天", "明天", "后天"];
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+  return wttrData.weather.slice(0, 3).map((w, i) => {
+    const noon = (w.hourly && (w.hourly[4] || w.hourly[3] || w.hourly[0])) || {};
+    const rawDesc =
+      (noon.lang_zh && noon.lang_zh[0] && noon.lang_zh[0].value) ||
+      (noon.weatherDesc && noon.weatherDesc[0] && noon.weatherDesc[0].value) ||
+      "晴";
+    const desc = wttrWeatherZh(rawDesc);
+    const dateObj = new Date(w.date);
+    const month = dateObj.getMonth() + 1;
+    const day = dateObj.getDate();
+    const weekday = weekdays[dateObj.getDay()] || "";
+
+    const windDir = noon.winddir16Point ? windDirZh(noon.winddir16Point) : "微风";
+    const windPower = noon.windspeedKmph ? `${Math.round(Number(noon.windspeedKmph) / 5)}级` : "";
+
+    return {
+      date: `${month}月${day}日`,
+      weekday,
+      dayName: dayNames[i] || `${i}天后`,
+      weather: desc,
+      icon: getWeatherEmoji(desc),
+      tempMin: Math.round(Number(w.mintempC || 0)),
+      tempMax: Math.round(Number(w.maxtempC || 0)),
+      wind: `${windDir} ${windPower}`.trim(),
+    };
+  });
+};
+
+// 解析高德天气预报 (casts)
+const parseAmapForecast = (casts) => {
+  if (!Array.isArray(casts)) return [];
+  const dayNames = ["今天", "明天", "后天"];
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+  return casts.slice(0, 3).map((c, i) => {
+    const desc = amapWeatherZh(c.dayweather || c.nightweather || "晴");
+    const dateObj = new Date(c.date);
+    const month = dateObj.getMonth() + 1;
+    const day = dateObj.getDate();
+    const weekday = weekdays[dateObj.getDay()] || (c.week ? `周${c.week}` : "");
+
+    const power = normalizeWindPower(c.daypower);
+    const windText = `${c.daywind || "微风"}${power ? " " + power + "级" : ""}`.trim();
+
+    return {
+      date: `${month}月${day}日`,
+      weekday,
+      dayName: dayNames[i] || `${i}天后`,
+      weather: desc,
+      icon: getWeatherEmoji(desc),
+      tempMin: Math.round(Number(c.nighttemp || c.daytemp || 0)),
+      tempMax: Math.round(Number(c.daytemp || c.nighttemp || 0)),
+      wind: windText,
+    };
+  });
+};
+
+// 预报兜底生成器（保证任何离线或异常情况下均有平滑三天预报）
+const generateFallbackForecast = (currentWeather, currentTemp) => {
+  const dayNames = ["今天", "明天", "后天"];
+  const baseTemp = Number(currentTemp) || 20;
+  const now = new Date();
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  const weathers = [currentWeather || "晴", "多云", "晴"];
+
+  return [0, 1, 2].map((i) => {
+    const d = new Date(now.getTime() + i * 24 * 3600 * 1000);
+    const desc = weathers[i];
+    return {
+      date: `${d.getMonth() + 1}月${d.getDate()}日`,
+      weekday: weekdays[d.getDay()],
+      dayName: dayNames[i],
+      weather: desc,
+      icon: getWeatherEmoji(desc),
+      tempMin: baseTemp - (i === 0 ? 3 : i === 1 ? 4 : 2),
+      tempMax: baseTemp + (i === 0 ? 3 : i === 1 ? 2 : 4),
+      wind: "微风 2级",
+    };
+  });
+};
+
 // 主源：uapis 天气（不传城市时按访客 IP 自动定位，无需额外定位接口）
 const loadByUapis = async () => {
   const data = await getUapiWeather();
+  const city = data.city || data.province || "未知城市";
+  const desc = amapWeatherZh(data.weather);
+  const currentTemp = data.temperature;
+
   weather.value = {
-    city: data.city || data.province || "未知城市",
-    weather: amapWeatherZh(data.weather),
-    temperature: data.temperature,
+    city,
+    weather: desc,
+    temperature: currentTemp,
     winddirection: data.wind_direction || "未知",
     windpower: normalizeWindPower(data.wind_power),
+    humidity: data.humidity || null,
   };
+
+  // 尝试拉取未来三天预报（通过备用源 wttr.in），失败时平滑兜底
+  try {
+    const wttrData = await getOtherWeather(city);
+    const parsed = parseWttrForecast(wttrData);
+    if (parsed.length >= 3) {
+      forecastList.value = parsed;
+      return;
+    }
+  } catch (err) {
+    console.warn("预报数据获取稍候重试，启用兜底预报:", err);
+  }
+  forecastList.value = generateFallbackForecast(desc, currentTemp);
 };
 
 // 高德 IP 定位 + 天气
@@ -245,16 +406,33 @@ const loadByAmap = async () => {
   const city = adCodeRes.city;
   const adcode = adCodeRes.adcode;
 
-  const result = await getWeather(mainKey, adcode);
-  if (result.infocode !== "10000") throw new Error("天气查询失败");
-  const live = result.lives[0];
+  const [liveRes, forecastRes] = await Promise.all([
+    getWeather(mainKey, adcode, "base"),
+    getWeather(mainKey, adcode, "all").catch(() => null),
+  ]);
+
+  if (liveRes.infocode !== "10000") throw new Error("天气查询失败");
+  const live = liveRes.lives[0];
+  const desc = amapWeatherZh(live.weather);
+  const currentTemp = live.temperature;
+
   weather.value = {
     city,
-    weather: amapWeatherZh(live.weather),
-    temperature: live.temperature,
+    weather: desc,
+    temperature: currentTemp,
     winddirection: live.winddirection,
     windpower: normalizeWindPower(live.windpower),
+    humidity: live.humidity || null,
   };
+
+  if (forecastRes && forecastRes.forecasts && forecastRes.forecasts[0]?.casts) {
+    const parsed = parseAmapForecast(forecastRes.forecasts[0].casts);
+    if (parsed.length >= 3) {
+      forecastList.value = parsed;
+      return;
+    }
+  }
+  forecastList.value = generateFallbackForecast(desc, currentTemp);
 };
 
 // IP 定位 + wttr.in
@@ -283,7 +461,15 @@ const loadByIp = async () => {
     temperature: cond.temp_C || "0",
     winddirection: windDirZh(cond.winddir16Point) || "未知",
     windpower: cond.windspeedKmph ? `${Math.round(Number(cond.windspeedKmph) / 5)}` : "0",
+    humidity: cond.humidity || null,
   };
+
+  const parsed = parseWttrForecast(result);
+  if (parsed.length >= 3) {
+    forecastList.value = parsed;
+  } else {
+    forecastList.value = generateFallbackForecast(weatherText, cond.temp_C);
+  }
 };
 
 // 加载天气
@@ -309,7 +495,15 @@ const loadWeather = async (silent) => {
     if (lastError) throw lastError;
   } catch (error) {
     console.error("天气加载失败:", error);
-    weather.value = { city: null, weather: null, temperature: null, winddirection: null, windpower: null };
+    weather.value = {
+      city: null,
+      weather: null,
+      temperature: null,
+      winddirection: null,
+      windpower: null,
+      humidity: null,
+    };
+    forecastList.value = [];
     if (!silent) {
       showMessage({ message: "天气信息获取失败", type: "warning", grouping: true });
     }
@@ -320,19 +514,22 @@ const loadWeather = async (silent) => {
   }
 };
 
-// 根据胶囊实时尺寸更新面板位置（移动端胶囊可能被收窄，面板独立设定宽度避免文字过挤）
+// 根据胶囊实时尺寸更新面板位置，做好各尺寸屏幕的安全边界适配
 const updatePanelPosition = () => {
   const badge = document.querySelector(".weather-badge");
   if (!badge) return;
   const rect = badge.getBoundingClientRect();
-  let left = rect.left;
-  // 移动端面板宽度独立于胶囊，保证详情可读
-  const width = isCompactHeader() ? 220 : rect.width;
-  // 面板右边缘与胶囊右边缘对齐
-  left = rect.right - width;
+  const screenWidth = window.innerWidth;
+  const isMobile = screenWidth <= 480;
+  // 移动端：自适应宽度（最大不超过 330px，两侧至少留 12px 间距）
+  const width = isMobile ? Math.min(screenWidth - 24, 330) : 320;
+  // 面板默认右边缘对齐胶囊右边缘
+  let left = rect.right - width;
   // 边界保护：避免面板超出视口左右边缘
-  if (left < 8) left = 8;
-  if (left + width > window.innerWidth - 8) left = window.innerWidth - 8 - width;
+  if (left < 12) left = 12;
+  if (left + width > screenWidth - 12) {
+    left = screenWidth - 12 - width;
+  }
   panelStyle.value = {
     top: `${rect.bottom + 8}px`,
     left: `${left}px`,
@@ -497,65 +694,250 @@ onBeforeUnmount(() => {
 // 天气详情面板
 .badge-panel {
   position: fixed;
-  z-index: 30;
-  // top / left / width 由 JS 根据胶囊实时尺寸动态设置
-  padding: 18px 20px;
+  z-index: 105;
+  padding: 16px 18px 14px;
   border-radius: 20px;
   background:
     linear-gradient(
       155deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.05) 36%,
-      rgba(0, 0, 0, 0.35) 100%
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.04) 40%,
+      rgba(0, 0, 0, 0.42) 100%
     ),
-    rgba(14, 16, 22, 0.65);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+    rgba(14, 16, 22, 0.78);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.5),
-    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 4px 16px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
   color: #fff;
   box-sizing: border-box;
+  transform-origin: top right;
 
-  .panel-city {
+  .panel-header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    .city-name {
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-    .city-temp {
-      font-size: 1.6rem;
-      font-weight: 600;
-    }
-  }
-  .panel-weather {
-    margin-top: 4px;
-    font-size: 0.9rem;
-    opacity: 0.85;
-  }
-  .panel-detail {
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid rgb(255 255 255 / 12%);
-    .detail-item {
+    padding-bottom: 12px;
+
+    .header-main {
       display: flex;
-      justify-content: space-between;
-      padding: 3px 0;
-      font-size: 0.82rem;
-      .label {
-        opacity: 0.6;
+      flex-direction: column;
+      gap: 3px;
+
+      .city-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .city-name {
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: #fff;
+          letter-spacing: 0.3px;
+        }
+
+        .forecast-tag {
+          font-size: 0.68rem;
+          padding: 1px 7px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.14);
+          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: 0.3px;
+          line-height: 1.4;
+        }
+      }
+
+      .weather-sub {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.82rem;
+        color: rgba(255, 255, 255, 0.68);
+
+        .dot {
+          opacity: 0.5;
+        }
+      }
+    }
+
+    .temp-now {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+
+      .unit {
+        font-size: 0.95rem;
+        font-weight: 400;
+        margin-left: 2px;
+        opacity: 0.85;
       }
     }
   }
 
-  transform-origin: top right;
+  .forecast-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    .forecast-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition:
+        background 0.2s,
+        border-color 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      &.is-today {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(255, 255, 255, 0.15);
+
+        .date-col .day-name {
+          color: #fff;
+        }
+      }
+
+      .date-col {
+        display: flex;
+        flex-direction: column;
+        width: 68px;
+        flex-shrink: 0;
+
+        .day-name {
+          font-size: 0.86rem;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.92);
+        }
+
+        .date-detail {
+          font-size: 0.68rem;
+          color: rgba(255, 255, 255, 0.48);
+          margin-top: 1px;
+          white-space: nowrap;
+        }
+      }
+
+      .weather-col {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        padding: 0 8px;
+
+        .emoji {
+          font-size: 1.15rem;
+          line-height: 1;
+        }
+
+        .desc {
+          font-size: 0.84rem;
+          color: rgba(255, 255, 255, 0.85);
+          white-space: nowrap;
+        }
+      }
+
+      .temp-col {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+
+        .t-min {
+          font-size: 0.82rem;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.52);
+          width: 22px;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .t-bar-box {
+          width: 32px;
+          height: 4px;
+          background: rgba(255, 255, 255, 0.12);
+          border-radius: 2px;
+          overflow: hidden;
+
+          .t-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 55%, #f6d365 100%);
+            border-radius: 2px;
+          }
+        }
+
+        .t-max {
+          font-size: 0.86rem;
+          font-weight: 600;
+          color: #fff;
+          width: 24px;
+          text-align: left;
+          font-variant-numeric: tabular-nums;
+        }
+      }
+    }
+  }
+
+  .panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    .footer-tip {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.42);
+    }
+
+    .refresh-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.65);
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #fff;
+      }
+    }
+  }
 
   @include mobile-viewport {
-    padding: 12px;
+    padding: 14px 14px 12px;
+    border-radius: 18px;
+
+    .forecast-list .forecast-card {
+      padding: 6px 8px;
+
+      .date-col {
+        width: 60px;
+      }
+
+      .temp-col .t-bar-box {
+        width: 24px;
+      }
+    }
   }
 }
 

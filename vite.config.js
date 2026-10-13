@@ -88,6 +88,11 @@ export default ({ mode, command }) => {
   checkEnv(env, mode, command === "build");
 
   return defineConfig({
+    define: {
+      __APP_VERSION__: JSON.stringify(
+        JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf8")).version,
+      ),
+    },
     plugins: [
       vue(),
       AutoImport({

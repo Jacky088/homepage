@@ -100,11 +100,12 @@ const requestWeather = async (city, apiKey) => {
   return fetchUpstream(url.toString(), apiKey);
 };
 
-const respond = (res, result, cacheControl, allowedOrigin) => {
+const respond = (res, result, cacheControl, matchedOrigin) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", result.ok ? cacheControl : "no-store");
-  if (allowedOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin.split(",")[0].trim());
+  if (matchedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", matchedOrigin);
+    res.setHeader("Vary", "Origin");
   }
   return res.status(result.status).send(result.text);
 };
@@ -125,10 +126,29 @@ export default async function handler(req, res) {
 
   // 可选来源校验：防止函数被他人当作免费接口盗刷
   const allowedOrigin = process.env.ALLOWED_ORIGIN;
+  let matchedOrigin = "";
   if (allowedOrigin) {
-    const origin = req.headers.origin || req.headers.referer || "";
-    const allowed = allowedOrigin.split(",").map((item) => item.trim());
-    if (!allowed.some((item) => item && origin.startsWith(item))) {
+    const rawOrigin = req.headers.origin || req.headers.referer || "";
+    let isAllowed = false;
+    try {
+      if (rawOrigin) {
+        const originHost = new URL(rawOrigin).origin;
+        const allowed = allowedOrigin.split(",").map((item) => {
+          try {
+            return new URL(item.trim()).origin;
+          } catch {
+            return item.trim();
+          }
+        });
+        if (allowed.includes(originHost)) {
+          isAllowed = true;
+          matchedOrigin = originHost;
+        }
+      }
+    } catch {
+      isAllowed = false;
+    }
+    if (!isAllowed) {
       return res.status(403).json({ error: "FORBIDDEN_ORIGIN" });
     }
   }
@@ -139,7 +159,7 @@ export default async function handler(req, res) {
   // 1) 调用方指定了城市：结果与访客无关，可走 CDN 共享缓存
   if (explicitCity) {
     const result = await requestWeather(explicitCity, apiKey);
-    return respond(res, result, PUBLIC_CACHE, allowedOrigin);
+    return respond(res, result, PUBLIC_CACHE, matchedOrigin);
   }
 
   // 2) 未指定城市：用访客真实 IP 反查城市，避免用机房 IP 去定位
@@ -148,11 +168,11 @@ export default async function handler(req, res) {
   if (ipCity) {
     const result = await requestWeather(ipCity, apiKey);
     if (result.ok) {
-      return respond(res, result, PRIVATE_CACHE, allowedOrigin);
+      return respond(res, result, PRIVATE_CACHE, matchedOrigin);
     }
   }
 
   // 3) 兜底：仍不传城市（自建反代等场景下请求来源 IP 即访客 IP 时依然可用）
   const fallback = await requestWeather("", apiKey);
-  return respond(res, fallback, PRIVATE_CACHE, allowedOrigin);
+  return respond(res, fallback, PRIVATE_CACHE, matchedOrigin);
 }

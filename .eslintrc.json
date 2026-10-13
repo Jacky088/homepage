@@ -38,6 +38,7 @@
     "onBeforeUnmount": true,
     "nextTick": true,
     "ElMessage": true,
-    "$openList": true
+    "$openList": true,
+    "__APP_VERSION__": "readonly"
   }
 }

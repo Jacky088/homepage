@@ -13,11 +13,11 @@
     <el-row :gutter="40">
       <el-col :span="12" class="left">
         <div class="logo text-hidden">
-          <span class="bg">{{ siteUrl[0] }}</span>
-          <span class="sm">.{{ siteUrl[1] }}</span>
+          <span class="bg">{{ siteUrl.main }}</span>
+          <span class="sm">{{ siteUrl.ext }}</span>
         </div>
         <div class="version">
-          <div class="num">v&nbsp;{{ config.version }}</div>
+          <div class="num">v&nbsp;{{ appVersion }}</div>
           <el-tooltip content="Github 源代码仓库" placement="right" :show-arrow="false">
             <github-one class="github" theme="outline" size="24" @click="jumpTo(siteGithub)" />
           </el-tooltip>
@@ -55,10 +55,10 @@
 import { CloseOne, SettingTwo, GithubOne, AddOne, Bug } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
 import Set from "@/components/Set.vue";
-import config from "@/../package.json";
 
 const store = mainStore();
 const closeShow = ref(false);
+const appVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "4.2.0";
 
 // 源码仓库地址（走环境变量，未配置时用 example 占位，避免把真实仓库写死在代码里）
 const siteGithub = import.meta.env.VITE_SITE_GITHUB || "https://github.com/example/homepage";
@@ -66,13 +66,16 @@ const siteGithub = import.meta.env.VITE_SITE_GITHUB || "https://github.com/examp
 // 站点链接
 const siteUrl = computed(() => {
   const url = import.meta.env.VITE_SITE_URL;
-  if (!url) return "example.com".split(".");
-  // 判断协议前缀
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    const urlFormat = url.replace(/^(https?:\/\/)/, "");
-    return urlFormat.split(".");
+  if (!url) return { main: "example", ext: ".com" };
+  const urlFormat = url.replace(/^(https?:\/\/)/, "").split("/")[0].trim();
+  const firstDot = urlFormat.indexOf(".");
+  if (firstDot === -1) {
+    return { main: urlFormat, ext: "" };
   }
-  return url.split(".");
+  return {
+    main: urlFormat.slice(0, firstDot),
+    ext: urlFormat.slice(firstDot),
+  };
 });
 
 // 更新日志
@@ -86,9 +89,12 @@ const upData = reactive({
   fix: ["修复天气 API", "时光胶囊显示错误", "移动端动画及细节", "图标更换为 IconPark"],
 });
 
-// 跳转源代码仓库
+// 跳转源代码仓库（安全外链打开）
 const jumpTo = (url) => {
-  window.open(url);
+  if (!url || typeof url !== "string") return;
+  if (/^https?:\/\//i.test(url)) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 };
 </script>
 

@@ -50,10 +50,29 @@ export default {
     }
 
     // 可选来源校验：配置了 ALLOWED_ORIGIN 时，非白名单来源直接拒绝
+    let matchedOrigin = "";
     if (env.ALLOWED_ORIGIN) {
-      const origin = request.headers.get("Origin") || request.headers.get("Referer") || "";
-      const allowed = env.ALLOWED_ORIGIN.split(",").map((s) => s.trim());
-      if (!allowed.some((o) => o && origin.startsWith(o))) {
+      const rawOrigin = request.headers.get("Origin") || request.headers.get("Referer") || "";
+      let isAllowed = false;
+      try {
+        if (rawOrigin) {
+          const originHost = new URL(rawOrigin).origin;
+          const allowed = env.ALLOWED_ORIGIN.split(",").map((s) => {
+            try {
+              return new URL(s.trim()).origin;
+            } catch {
+              return s.trim();
+            }
+          });
+          if (allowed.includes(originHost)) {
+            isAllowed = true;
+            matchedOrigin = originHost;
+          }
+        }
+      } catch {
+        isAllowed = false;
+      }
+      if (!isAllowed) {
         return json({ status: "0", info: "FORBIDDEN_ORIGIN" }, 403);
       }
     }
@@ -77,8 +96,9 @@ export default {
     const resp = new Response(upstream.body, upstream);
     resp.headers.set("Content-Type", "application/json; charset=utf-8");
     resp.headers.set("Cache-Control", "no-store");
-    if (env.ALLOWED_ORIGIN) {
-      resp.headers.set("Access-Control-Allow-Origin", env.ALLOWED_ORIGIN.split(",")[0].trim());
+    if (matchedOrigin) {
+      resp.headers.set("Access-Control-Allow-Origin", matchedOrigin);
+      resp.headers.set("Vary", "Origin");
     }
     return resp;
   },

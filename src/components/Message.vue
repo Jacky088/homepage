@@ -8,9 +8,9 @@
       @click="store.capsuleOpenState = !store.capsuleOpenState"
     >
       <img class="logo-img" :src="siteLogo" alt="logo" />
-      <div :class="{ name: true, 'text-hidden': true, long: siteUrl[0].length >= 6 }">
-        <span class="bg">{{ siteUrl[0] }}</span>
-        <span class="sm">.{{ siteUrl[1] }}</span>
+      <div :class="{ name: true, 'text-hidden': true, long: siteUrl.main.length >= 6 }">
+        <span class="bg">{{ siteUrl.main }}</span>
+        <span class="sm">{{ siteUrl.ext }}</span>
       </div>
     </div>
   </div>
@@ -25,13 +25,16 @@ const siteLogo = import.meta.env.VITE_SITE_MAIN_LOGO;
 // 站点链接
 const siteUrl = computed(() => {
   const url = import.meta.env.VITE_SITE_URL;
-  if (!url) return "example.com".split(".");
-  // 判断协议前缀
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    const urlFormat = url.replace(/^(https?:\/\/)/, "");
-    return urlFormat.split(".");
+  if (!url) return { main: "example", ext: ".com" };
+  const urlFormat = url.replace(/^(https?:\/\/)/, "").split("/")[0].trim();
+  const firstDot = urlFormat.indexOf(".");
+  if (firstDot === -1) {
+    return { main: urlFormat, ext: "" };
   }
-  return url.split(".");
+  return {
+    main: urlFormat.slice(0, firstDot),
+    ext: urlFormat.slice(firstDot),
+  };
 });
 </script>
 

@@ -91,13 +91,14 @@ const requestWeather = (city, apiKey) => {
   return fetchUpstream(url.toString(), apiKey);
 };
 
-const respond = (result, cacheControl, allowedOrigin) => {
+const respond = (result, cacheControl, matchedOrigin) => {
   const headers = {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": result.ok ? cacheControl : "no-store",
   };
-  if (allowedOrigin) {
-    headers["Access-Control-Allow-Origin"] = allowedOrigin.split(",")[0].trim();
+  if (matchedOrigin) {
+    headers["Access-Control-Allow-Origin"] = matchedOrigin;
+    headers["Vary"] = "Origin";
   }
   return new Response(result.text, { status: result.status, headers });
 };
@@ -122,10 +123,29 @@ export async function onRequest({ request, env }) {
   }
 
   const allowedOrigin = env.ALLOWED_ORIGIN;
+  let matchedOrigin = "";
   if (allowedOrigin) {
-    const origin = request.headers.get("origin") || request.headers.get("referer") || "";
-    const allowed = allowedOrigin.split(",").map((item) => item.trim());
-    if (!allowed.some((item) => item && origin.startsWith(item))) {
+    const rawOrigin = request.headers.get("origin") || request.headers.get("referer") || "";
+    let isAllowed = false;
+    try {
+      if (rawOrigin) {
+        const originHost = new URL(rawOrigin).origin;
+        const allowed = allowedOrigin.split(",").map((item) => {
+          try {
+            return new URL(item.trim()).origin;
+          } catch {
+            return item.trim();
+          }
+        });
+        if (allowed.includes(originHost)) {
+          isAllowed = true;
+          matchedOrigin = originHost;
+        }
+      }
+    } catch {
+      isAllowed = false;
+    }
+    if (!isAllowed) {
       return new Response(JSON.stringify({ error: "FORBIDDEN_ORIGIN" }), {
         status: 403,
         headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -137,16 +157,16 @@ export async function onRequest({ request, env }) {
 
   // 1) 调用方指定了城市：结果与访客无关，可走 CDN 共享缓存
   if (explicitCity) {
-    return respond(await requestWeather(explicitCity, apiKey), PUBLIC_CACHE, allowedOrigin);
+    return respond(await requestWeather(explicitCity, apiKey), PUBLIC_CACHE, matchedOrigin);
   }
 
   // 2) 未指定城市：用访客真实 IP 反查城市，避免拿机房 IP 去定位
   const ipCity = await resolveCityByIp(getClientIp(request), apiKey);
   if (ipCity) {
     const result = await requestWeather(ipCity, apiKey);
-    if (result.ok) return respond(result, PRIVATE_CACHE, allowedOrigin);
+    if (result.ok) return respond(result, PRIVATE_CACHE, matchedOrigin);
   }
 
   // 3) 兜底：仍不传城市
-  return respond(await requestWeather("", apiKey), PRIVATE_CACHE, allowedOrigin);
+  return respond(await requestWeather("", apiKey), PRIVATE_CACHE, matchedOrigin);
 }

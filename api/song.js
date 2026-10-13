@@ -45,12 +45,36 @@ export default async function handler(req, res) {
   }
 
   // 可选来源校验：防止函数被他人当作免费接口盗刷（与 api/weather.js 保持一致）
+  // 可选来源校验：防止函数被他人当作免费接口盗刷（与 api/weather.js 保持一致）
   const allowedOrigin = process.env.ALLOWED_ORIGIN;
   if (allowedOrigin) {
-    const origin = req.headers.origin || req.headers.referer || "";
-    const allowed = allowedOrigin.split(",").map((item) => item.trim());
-    if (!allowed.some((item) => item && origin.startsWith(item))) {
+    const rawOrigin = req.headers.origin || req.headers.referer || "";
+    let isAllowed = false;
+    let matchedOrigin = "";
+    try {
+      if (rawOrigin) {
+        const originHost = new URL(rawOrigin).origin;
+        const allowed = allowedOrigin.split(",").map((item) => {
+          try {
+            return new URL(item.trim()).origin;
+          } catch {
+            return item.trim();
+          }
+        });
+        if (allowed.includes(originHost)) {
+          isAllowed = true;
+          matchedOrigin = originHost;
+        }
+      }
+    } catch {
+      isAllowed = false;
+    }
+    if (!isAllowed) {
       return res.status(403).json({ error: "FORBIDDEN_ORIGIN" });
+    }
+    if (matchedOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", matchedOrigin);
+      res.setHeader("Vary", "Origin");
     }
   }
 

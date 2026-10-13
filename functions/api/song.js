@@ -59,13 +59,34 @@ export async function onRequest({ request, env }) {
 
   // 可选来源校验：防止函数被他人当作免费接口盗刷（与 functions/uapi/weather.js 一致）
   const allowedOrigin = env.ALLOWED_ORIGIN;
+  let matchedOrigin = "";
   if (allowedOrigin) {
-    const origin = request.headers.get("origin") || request.headers.get("referer") || "";
-    const allowed = allowedOrigin.split(",").map((item) => item.trim());
-    if (!allowed.some((item) => item && origin.startsWith(item))) {
+    const rawOrigin = request.headers.get("origin") || request.headers.get("referer") || "";
+    let isAllowed = false;
+    try {
+      if (rawOrigin) {
+        const originHost = new URL(rawOrigin).origin;
+        const allowed = allowedOrigin.split(",").map((item) => {
+          try {
+            return new URL(item.trim()).origin;
+          } catch {
+            return item.trim();
+          }
+        });
+        if (allowed.includes(originHost)) {
+          isAllowed = true;
+          matchedOrigin = originHost;
+        }
+      }
+    } catch {
+      isAllowed = false;
+    }
+    if (!isAllowed) {
       return jsonResponse({ error: "FORBIDDEN_ORIGIN" }, 403);
     }
   }
+
+  const corsHeaders = matchedOrigin ? { "Access-Control-Allow-Origin": matchedOrigin, Vary: "Origin" } : {};
 
   const upstream = (env.SONG_API_UPSTREAM || "").trim().replace(/\/+$/, "");
   if (!upstream) {
@@ -76,6 +97,7 @@ export async function onRequest({ request, env }) {
         message: "未配置环境变量 SONG_API_UPSTREAM，请在 EdgeOne Pages 项目设置中添加",
       },
       502,
+      corsHeaders,
     );
   }
 
@@ -84,7 +106,7 @@ export async function onRequest({ request, env }) {
   const type = pickParam(url.searchParams.get("type"), ALLOWED_TYPE);
   const id = pickParam(url.searchParams.get("id"), ID_PATTERN);
   if (!server || !type || !id) {
-    return jsonResponse({ error: "INVALID_PARAM", message: "server / type / id 参数不合法" }, 400);
+    return jsonResponse({ error: "INVALID_PARAM", message: "server / type / id 参数不合法" }, 400, corsHeaders);
   }
 
   const controller = new AbortController();
@@ -103,12 +125,14 @@ export async function onRequest({ request, env }) {
       headers: {
         "Content-Type": upstreamRes.headers.get("content-type") || defaultContentType,
         "Cache-Control": upstreamRes.ok ? (type === "lrc" ? "public, max-age=3600" : "public, max-age=60") : "no-store",
+        ...corsHeaders,
       },
     });
   } catch (error) {
     return jsonResponse(
       { error: "UPSTREAM_UNREACHABLE", message: error?.message || "上游接口不可达" },
       502,
+      corsHeaders,
     );
   } finally {
     clearTimeout(timer);

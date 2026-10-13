@@ -1,5 +1,5 @@
 # 构建应用
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # 启用 corepack 内置 pnpm（版本由 package.json 的 packageManager 字段固定），

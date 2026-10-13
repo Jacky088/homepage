@@ -12,7 +12,7 @@
           -
         </span>
         {{ fullYear }}
-        <a :href="siteUrl">{{ siteAuthor }}</a>
+        <a :href="siteUrl" target="_blank" rel="noopener noreferrer">{{ siteAuthor }}</a>
       </span>
       <!-- 以下信息请不要修改哦 -->
  

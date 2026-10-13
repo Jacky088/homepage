@@ -301,9 +301,9 @@ export const getAdcode = async (key) => {
 };
 
 // 高德API：根据城市编码获取天气信息
-export const getWeather = async (key, city) => {
+export const getWeather = async (key, city, extensions = "base") => {
   const res = await fetchWithTimeout(
-    `${AMAP_BASE}/v3/weather/weatherInfo?key=${key}&city=${city}`,
+    `${AMAP_BASE}/v3/weather/weatherInfo?key=${key}&city=${city}&extensions=${extensions}`,
     { cache: "no-cache" }
   );
   if (!res.ok) {
