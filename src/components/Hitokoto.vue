@@ -133,8 +133,10 @@ onMounted(() => {
     }
 
     .text {
-      // 流式字号：窄窗口缩小、超宽屏适度放大，无需断点
-      font-size: clamp(1.4rem, 2.2vw + 0.8rem, 2.2rem);
+      // 流式字号：窄窗口适度收紧、大屏大气舒展
+      font-size: clamp(1.6rem, 2.4vw + 0.6rem, 2.35rem);
+      font-weight: 500;
+      letter-spacing: 0.02em;
       text-align: center;
       line-height: 1.5;
       // 中文断行规则：禁则处理（标点不入行首）+ 词首禁断
@@ -160,20 +162,35 @@ onMounted(() => {
 
   @media (max-width: $bp-md) {
     max-width: 92vw;
-    padding: 16px 16px;
+    padding: 16px 12px;
     .content {
       flex-direction: column;
-      gap: 12px;
-      max-width: 88vw;
-      min-height: 5.4em;
+      gap: 10px;
+      max-width: 90vw;
+      min-height: 4.8em;
       .text {
-        font-size: clamp(1.05rem, 3.6vw, 1.15rem);
+        font-size: clamp(1.4rem, 5.2vw, 1.85rem);
+        font-weight: 500;
+        letter-spacing: 0.02em;
         white-space: normal;
-        max-width: 88vw;
-        line-height: 1.8;
+        max-width: 90vw;
+        line-height: 1.65;
       }
       .from {
-        font-size: 0.95rem;
+        font-size: clamp(1.05rem, 3.2vw, 1.2rem);
+        margin-top: 6px;
+        opacity: 0.85;
+      }
+    }
+  }
+
+  @media (max-width: $bp-sm) {
+    .content {
+      .text {
+        font-size: clamp(1.35rem, 5.6vw, 1.65rem);
+      }
+      .from {
+        font-size: 1rem;
       }
     }
   }

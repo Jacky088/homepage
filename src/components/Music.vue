@@ -113,59 +113,6 @@
     </Transition>
   </Teleport>
 
-  <!-- 迷你播放器：右下角悬停展开式。收起态为 44px 音乐图标（与壁纸按钮组成工具列），
-       桌面端悬停时向左展开成带封面/歌名/播放键的胶囊，移开收回。
-       点击图标或胶囊主体打开播放面板，播放键直接播放/暂停。
-       面板打开 / 壁纸展示 / 设置页时隐藏（与工具列同步） -->
-  <Teleport to="body">
-    <div
-      v-show="showMiniPlayer"
-      :class="['mini-player', 'glass-pill', { expanded: miniHover, 'has-nav-btn': store.navCollapsed }]"
-      @pointerenter="onMiniEnter"
-      @pointerleave="onMiniLeave"
-      @click="openPanel"
-    >
-      <!-- 小唱片：播放时旋转（展开态显示） -->
-      <div :class="['mini-disc', { spinning: store.playerState }]">
-        <img
-          v-if="coverUrl"
-          :src="coverUrl"
-          alt="专辑封面"
-          class="mini-cover"
-          draggable="false"
-          @error="coverUrl = ''"
-        />
-        <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="1.6">
-          <path d="M9 18V5l12-2v13" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
-        <!-- 玻璃高光 -->
-        <div class="mini-disc-sheen"></div>
-      </div>
-      <!-- 歌曲信息（展开态显示） -->
-      <div class="mini-info">
-        <span class="mini-name text-hidden">{{ store.getPlayerData.name || "未播放音乐" }}</span>
-        <span class="mini-artist text-hidden">{{ store.getPlayerData.artist || "打开播放面板" }}</span>
-      </div>
-      <!-- 右侧圆形按钮：收起态为音乐图标，展开态为播放/暂停 -->
-      <div
-        class="mini-toggle"
-        :title="miniHover ? (store.playerState ? '暂停' : '播放') : '来点music听听？'"
-        @click.stop="miniHover ? changePlayState() : openPanel()"
-      >
-        <!-- 收起态：纯白音符图标（与壁纸按钮同构，无底色轮廓） -->
-        <svg v-if="!miniHover" class="toggle-icon" viewBox="0 0 24 24" width="18" height="18" fill="#ffffff">
-          <path d="M9 18.5V5.5l11-2v12.4a3 3 0 1 1-1.5-2.6V6.3l-8 1.5v10.7a3 3 0 1 1-1.5-2.6z" />
-        </svg>
-        <!-- 展开态：播放/暂停 -->
-        <template v-else>
-          <play-one v-if="!store.playerState" theme="filled" size="18" fill="#fff" />
-          <pause v-else theme="filled" size="18" fill="#fff" />
-        </template>
-      </div>
-    </div>
-  </Teleport>
 </template>
 
 <script setup>
@@ -180,8 +127,7 @@ import {
 } from "@icon-park/vue-next";
 import Player from "@/components/Player.vue";
 import { mainStore } from "@/store";
-import { showMessage } from "@/utils/message.js";
-import { isMobileWidth } from "@/constants/breakpoint";
+
 const store = mainStore();
 
 // 音量条数据
@@ -360,37 +306,8 @@ const changePlayState = () => {
   playerRef.value.playToggle();
 };
 
-// 迷你播放器：面板打开 / 壁纸展示 / 设置页时隐藏（与右下角浮动工具列同步）
-const showMiniPlayer = computed(
-  () => store.musicIsOk && !store.musicOpenState && !store.backgroundShow && !store.setOpenState,
-);
 
-// 迷你播放器悬停展开状态（桌面端悬停展开成胶囊，移开收回图标）。
-// 用 pointerenter/pointerleave 而非 mouseenter/mouseleave：PointerEvent 才带
-// pointerType，可区分真实鼠标与触摸 tap 合成的兼容事件——移动端 tap 会先合成
-// mouseenter，若不区分指针类型会导致点击图标误触播放/暂停而非打开面板。
-// 窄视口（≤720px，与样式断点一致）下禁用悬停展开：桌面浏览器缩窄窗口时
-// pointerType 仍是 mouse，需按视口宽度兜底，移动端只保留点击打开面板
-const miniHover = ref(false);
-const isMobileViewport = () => isMobileWidth(window.innerWidth);
-const onMiniEnter = (e) => {
-  if (e.pointerType === "mouse" && !isMobileViewport()) miniHover.value = true;
-};
-const onMiniLeave = (e) => {
-  if (e.pointerType === "mouse") miniHover.value = false;
-};
 
-// 点击迷你播放器打开播放面板
-const openPanel = () => {
-  if (!store.musicIsOk) {
-    showMessage({
-      message: "音乐播放器初始化失败！",
-      grouping: true,
-    });
-    return;
-  }
-  store.musicOpenState = true;
-};
 
 // 音乐上下曲
 const changeMusicIndex = (type) => {
@@ -1041,204 +958,7 @@ watch(
   }
 }
 
-// ========== 迷你播放器（右上角浮动按钮：收起态为音乐图标，悬停展开成胶囊） ==========
-.mini-player {
-  position: fixed;
-  right: 24px;
-  top: 65px; // 无汉堡菜单时：位于壁纸按钮(top 17px + 38px = 55px)下方 10px
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 38px; // 收起态：与汉堡按钮、壁纸按钮同尺寸(38px)的圆形图标
-  height: 38px;
-  padding: 0;
-  border-radius: 19px;
-  overflow: hidden; // 收起态裁掉内部内容，展开时随宽度过渡露出
-  cursor: pointer;
-  user-select: none;
-  animation: fade 0.4s;
-  transition:
-    width 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    border-radius 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    padding 0.35s cubic-bezier(0.33, 1, 0.68, 1),
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.3s,
-    top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
-  // 有汉堡菜单时：自动下移到壁纸按钮下方 (top 65px + 38px + 10px = 113px)
-  &.has-nav-btn {
-    top: 113px;
-  }
-
-  // 悬停展开成胶囊（右边缘固定，向左生长）
-  &.expanded {
-    width: 190px;
-    padding: 0 4px 0 6px;
-    border-radius: 19px;
-  }
-
-  &:hover:not(.expanded) {
-    transform: translateY(-1px) scale(1.05);
-  }
-  &:active {
-    transform: translateY(0) scale(0.92);
-  }
-
-  // 小唱片（展开态显示）
-  .mini-disc {
-    position: relative;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background:
-      repeating-radial-gradient(circle at center, rgb(255 255 255 / 6%) 0 1px, transparent 1px 3px),
-      linear-gradient(135deg, rgb(255 255 255 / 16%) 0%, rgb(255 255 255 / 4%) 100%);
-    border: 1.5px solid rgb(255 255 255 / 20%);
-    opacity: 0;
-    transform: scale(0.6);
-    transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
-    pointer-events: none;
-
-    &.spinning {
-      animation: disc-spin 8s linear infinite;
-    }
-
-    .mini-cover {
-      position: absolute;
-      inset: 2px;
-      width: calc(100% - 4px);
-      height: calc(100% - 4px);
-      border-radius: 50%;
-      object-fit: cover;
-      user-select: none;
-    }
-
-    // 玻璃高光
-    .mini-disc-sheen {
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: conic-gradient(
-        from 210deg,
-        transparent 0deg,
-        rgb(255 255 255 / 22%) 38deg,
-        transparent 85deg
-      );
-      pointer-events: none;
-      z-index: 2;
-    }
-  }
-
-  // 歌曲信息（展开态显示）
-  .mini-info {
-    flex: 1;
-    min-width: 0; // 允许文字省略
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    line-height: 1.2;
-    opacity: 0;
-    transform: translateX(12px);
-    transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
-    pointer-events: none;
-
-    .mini-name {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #fff;
-      text-shadow: 0 1px 3px rgb(0 0 0 / 30%);
-    }
-    .mini-artist {
-      font-size: 0.65rem;
-      color: rgb(255 255 255 / 55%);
-    }
-  }
-
-  // 右侧圆形按钮：收起态为纯白音符（无底色，与壁纸按钮同构），展开态为播放/暂停圆钮
-  .mini-toggle {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: transparent;
-    border: 1px solid transparent;
-    transition: background 0.2s, border-color 0.2s, transform 0.2s;
-
-    .i-icon {
-      display: flex;
-    }
-
-    // 展开态显示圆钮底（播放/暂停需要可见的按钮轮廓）
-    .expanded & {
-      width: 28px;
-      height: 28px;
-      right: 5px;
-      background: rgb(255 255 255 / 10%);
-      border-color: rgb(255 255 255 / 16%);
-    }
-
-    &:hover {
-      background: rgb(255 255 255 / 20%);
-    }
-  }
-
-  // 展开态：唱片与歌曲信息滑入
-  &.expanded {
-    .mini-disc {
-      opacity: 1;
-      transform: scale(1);
-      pointer-events: auto;
-    }
-    .mini-info {
-      opacity: 1;
-      transform: translateX(0);
-      pointer-events: auto;
-    }
-  }
-
-  // 移动端：无悬停，保持收起态图标，点击直接打开面板
-  @include mobile-viewport {
-    right: 16px;
-    top: 59px; // 移动端无汉堡菜单时兜底
-
-    &.has-nav-btn {
-      top: 107px; // 移动端有汉堡菜单时：位于壁纸按钮下方 (top 59px + 38px + 10px = 107px)
-    }
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    border-radius: 19px;
-
-    .mini-disc,
-    .mini-info {
-      display: none;
-    }
-
-    .mini-toggle {
-      width: 38px;
-      height: 38px;
-      right: 0;
-
-      .toggle-icon {
-        width: 18px;
-        height: 18px;
-      }
-    }
-  }
-}
 </style>
 
 <style lang="scss">

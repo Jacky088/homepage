@@ -18,7 +18,12 @@
     </a>
   </div>
 
-  <!-- 移动端: 底部抽屉面板 -->
+  <!-- 网站链接总长度测量标尺（脱离文档流，不受 nav-collapsed 影响，用于实时准确测量网站链接所需真实总宽度） -->
+  <div v-if="siteLinks[0]" ref="rulerRef" class="links-ruler" aria-hidden="true">
+    <span v-for="item in siteLinks" :key="item.name" class="link-item">{{ item.name }}</span>
+  </div>
+
+  <!-- 移动端 / 折叠时: 底部抽屉面板 -->
   <Teleport to="body">
     <Transition name="drawer">
       <div v-show="store.navCollapsed && store.mobileOpenState" id="mobile-drawer" class="mobile-drawer-mask" @click="store.mobileOpenState = false">
@@ -66,9 +71,11 @@ import { mainStore } from "@/store";
 import siteLinks from "@/assets/siteLinks.json";
 import debounce from "@/utils/debounce.js";
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { BP_MD, isMobileWidth } from "@/constants/breakpoint";
 
 const store = mainStore();
 const linksRef = ref(null);
+const rulerRef = ref(null);
 let resizeObserver = null;
 
 // 网站链接图标
@@ -101,48 +108,65 @@ const handleLinkClick = (event, data) => {
   store.mobileOpenState = false;
 };
 
-// 测量横排导航是否放得下所有网站标题
+// 测量横排导航是否放得下所有网站标题，并根据网站列表真实长度动态计算折叠断点
 const checkNavFit = () => {
-  if (!linksRef.value) return;
-  // 若顶栏处于隐藏状态（如设置页 / 壁纸展示），跳过测量避免 clientWidth 为 0 导致误折叠
+  // 若顶栏处于隐藏状态（如设置页 / 壁纸展示），跳过测量避免计算偏差
   if (store.backgroundShow || store.setOpenState) return;
 
-  const container = linksRef.value;
-  const items = container.querySelectorAll(".link-item");
-  if (!items.length) return;
+  const currentWidth = window.innerWidth;
 
-  // 若当前因折叠而隐藏（display:none），临时覆盖以测得真实容器宽度与项目宽度
-  const wasHidden = getComputedStyle(container).display === "none";
-  if (wasHidden) {
-    container.style.visibility = "hidden";
-    container.style.display = "flex";
+  // 1. 移动端尺寸（<= 720px）保持移动端折叠抽屉逻辑
+  if (isMobileWidth(currentWidth)) {
+    store.setNavCollapsed(true);
+    return;
   }
 
-  const containerWidth = container.clientWidth;
-  const style = getComputedStyle(container);
-  const gap = parseFloat(style.gap) || 0;
-  const paddingLeft = parseFloat(style.paddingLeft) || 0;
-  const paddingRight = parseFloat(style.paddingRight) || 0;
-  const availableWidth = Math.max(0, containerWidth - paddingLeft - paddingRight);
+  // 2. 桌面端：基于实际网站列表标尺测量宽度动态计算所需断点
+  const ruler = rulerRef.value;
+  if (!ruler) return;
 
-  let total = 0;
-  items.forEach((el, i) => {
-    total += el.offsetWidth;
-    if (i < items.length - 1) total += gap;
-  });
+  // 测量所有网站链接横排所需总宽度（含内边距与元素间距）
+  const linksWidth = ruler.scrollWidth || ruler.offsetWidth || 0;
 
-  // 还原临时样式
-  if (wasHidden) {
-    container.style.display = "";
-    container.style.visibility = "";
+  // 获取桌面顶栏其他元素的实际占据宽度
+  const brandEl = document.querySelector(".site-header .header-brand");
+  const brandWidth = brandEl && brandEl.offsetWidth > 0 ? brandEl.offsetWidth : 190;
+
+  const weatherEl = document.querySelector(".site-header .header-weather");
+  const weatherWidth = weatherEl && weatherEl.offsetWidth > 0 ? weatherEl.offsetWidth : 180;
+
+  // 桌面端顶栏操作按钮组常驻宽度（壁纸 38px + 音乐 38px + gap 10px = 86px）
+  const actionsEl = document.querySelector(".site-header .header-actions");
+  let actionsWidth = 86;
+  if (actionsEl) {
+    actionsWidth = store.navCollapsed
+      ? Math.max(86, actionsEl.offsetWidth - 48)
+      : Math.max(86, actionsEl.offsetWidth);
   }
 
-  store.setNavCollapsed(total > availableWidth);
+  // 顶栏左右内边距 (padding: 0 24px = 48px) 与链接左边距 (margin-left: 12px)
+  const headerPadding = 48;
+  const linksMarginLeft = 12;
+
+  // 保持舒适呼吸感的安全缓冲间距（避免链接紧挨着天气胶囊）
+  const safeMargin = 36;
+
+  // 动态所需断点：根据网站列表真实总长度精确计算
+  const requiredBreakpoint = Math.max(
+    BP_MD,
+    Math.ceil(brandWidth + linksMarginLeft + linksWidth + weatherWidth + actionsWidth + headerPadding + safeMargin)
+  );
+
+  // 当窗口宽度小于动态断点时折叠到汉堡菜单；大于等于动态断点时展开完整显示
+  const shouldCollapse = currentWidth < requiredBreakpoint;
+  store.setNavCollapsed(shouldCollapse);
+  if (!shouldCollapse) {
+    store.mobileOpenState = false;
+  }
 };
 
-// 防抖版测量：checkNavFit 会遍历所有 .link-item 读 offsetWidth（强制同步布局），
-// 直接挂在 resize / ResizeObserver 上会在拖拽窗口时每帧触发一次 reflow
-const scheduleNavFit = debounce(checkNavFit, 100);
+// 极速防抖版测量（20ms 既防止过载，又能保证拖拽窗口时如丝般顺滑响应）
+const scheduleNavFit = debounce(checkNavFit, 20);
 
 // 监听背景展示与设置页面关闭，及时重新测量
 watch(
@@ -160,12 +184,11 @@ onMounted(() => {
     document.fonts.ready.then(checkNavFit);
   }
   window.addEventListener("resize", scheduleNavFit);
-  const header = document.querySelector(".site-header");
-  if (header && "ResizeObserver" in window) {
+  if ("ResizeObserver" in window) {
     resizeObserver = new ResizeObserver(() => {
       scheduleNavFit();
     });
-    resizeObserver.observe(header);
+    resizeObserver.observe(document.body);
   }
 });
 
@@ -238,6 +261,26 @@ onBeforeUnmount(() => {
   }
 }
 
+// 脱离文档流的测量标尺：不受 nav-collapsed 影响，精准读取实际字体与文字宽度
+.links-ruler {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  padding: 0 16px 0 28px;
+  white-space: nowrap;
+
+  .link-item {
+    font-size: 1.15rem;
+    white-space: nowrap;
+  }
+}
+
 // 移动端底部抽屉
 .mobile-drawer-mask {
   position: fixed;
@@ -253,6 +296,7 @@ onBeforeUnmount(() => {
 
   .mobile-drawer {
     width: 100%;
+    max-width: 620px;
     max-height: 70vh;
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(30px) saturate(1.3);

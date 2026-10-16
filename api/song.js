@@ -45,7 +45,6 @@ export default async function handler(req, res) {
   }
 
   // 可选来源校验：防止函数被他人当作免费接口盗刷（与 api/weather.js 保持一致）
-  // 可选来源校验：防止函数被他人当作免费接口盗刷（与 api/weather.js 保持一致）
   const allowedOrigin = process.env.ALLOWED_ORIGIN;
   if (allowedOrigin) {
     const rawOrigin = req.headers.origin || req.headers.referer || "";

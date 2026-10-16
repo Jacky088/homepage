@@ -1,30 +1,17 @@
 <template>
-  <footer id="footer" :class="store.footerBlur ? 'blur' : null">
-    <!-- 不用 Transition：动画时钟被节流时（后台标签页/省电模式）transitionend 丢失
-         会导致 out-in 永久卡死、歌词不再更新。改用 :key 重建 + CSS fade 入场动画 -->
-    <div v-if="!store.playerState || !store.playerLrcShow" class="power">
-      <span>
-        <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
-        &copy;
-        <span v-if="startYear < fullYear"
-          class="site-start">
-          {{ startYear }}
-          -
-        </span>
-        {{ fullYear }}
-        <a :href="siteUrl" target="_blank" rel="noopener noreferrer">{{ siteAuthor }}</a>
-      </span>
-      <!-- 以下信息请不要修改哦 -->
- 
-      <!-- 站点备案 -->
-      <span v-if="siteIcp">
-        &amp;
-        <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
-          {{ siteIcp }}
-        </a>
-      </span>
+  <footer id="footer" ref="footerRef" :class="store.footerBlur ? 'blur' : null">
+    <!-- 左侧社交链接 -->
+    <div class="footer-left">
+      <SocialLinks
+        :is-overflow="isSocialOverflow"
+        :is-expanded="isSocialExpanded"
+        :visible-count="visibleSocialCount"
+        @toggle-expand="toggleSocialExpand"
+      />
     </div>
-    <div v-else class="lrc">
+
+    <!-- 歌词展示（播放且开启歌词时，不要动歌词显示） -->
+    <div v-if="store.playerState && store.playerLrcShow" class="lrc">
       <div class="lrc-all" :key="store.getPlayerLrc">
         <music-one theme="filled" size="18" fill="#efefef" />
         <!-- 歌词超宽时自动跑马灯，速度按歌词时长/文本长度动态计算 -->
@@ -39,15 +26,114 @@
         <music-one theme="filled" size="18" fill="#efefef" />
       </div>
     </div>
+
+    <!-- 右侧版权与备案（未开启歌词且社交未展开时展示） -->
+    <Transition name="fade">
+      <div
+        v-if="(!store.playerState || !store.playerLrcShow) && !isSocialExpanded"
+        class="footer-right"
+        ref="powerRef"
+      >
+        <div class="power">
+          <span>
+            <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
+            &copy;
+            <span v-if="startYear < fullYear" class="site-start">
+              {{ startYear }}
+              -
+            </span>
+            {{ fullYear }}
+            <a :href="siteUrl" target="_blank" rel="noopener noreferrer">{{ siteAuthor }}</a>
+          </span>
+          <!-- 站点备案 -->
+          <span v-if="siteIcp" class="site-icp">
+            &amp;
+            <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
+              {{ siteIcp }}
+            </a>
+          </span>
+        </div>
+      </div>
+    </Transition>
   </footer>
 </template>
 
 <script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { MusicOne } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
+import SocialLinks from "@/components/SocialLinks.vue";
+import socialLinks from "@/assets/socialLinks.json";
 
 const store = mainStore();
 const fullYear = new Date().getFullYear();
+
+// 元素引用与折叠状态
+const footerRef = ref(null);
+const powerRef = ref(null);
+const isSocialOverflow = ref(false);
+const isSocialExpanded = ref(false);
+const visibleSocialCount = ref(socialLinks.length);
+
+const toggleSocialExpand = () => {
+  isSocialExpanded.value = !isSocialExpanded.value;
+};
+
+// 判定社交链接与版权文字是否发生重叠，并计算折叠保留数量
+const computeOverflow = () => {
+  if (!footerRef.value) return;
+  const footerW = footerRef.value.clientWidth;
+  if (!footerW) return;
+  const screenW = window.innerWidth;
+  const isMobile = screenW <= 480;
+  const isTablet = screenW <= 720 && screenW > 480;
+
+  const iconSize = isMobile ? 19 : isTablet ? 20 : 22;
+  const gap = isMobile ? 10 : isTablet ? 12 : 14;
+  const leftMargin = isMobile ? 12 : isTablet ? 16 : 24;
+  const rightMargin = isMobile ? 12 : isTablet ? 16 : 24;
+  const btnWidth = isMobile ? 20 : isTablet ? 22 : 24;
+  const safeBuffer = isMobile ? 20 : 32;
+
+  const totalCount = socialLinks.length;
+  // 全部展开时社交区域的总占用宽度
+  const fullSocialW = totalCount * iconSize + (totalCount - 1) * gap;
+
+  // 测量或估算版权文字宽度
+  let powerW = isMobile ? 110 : isTablet ? 150 : 220;
+  if (powerRef.value) {
+    powerW = powerRef.value.offsetWidth;
+  }
+
+  // 总所需空间 = 左外边距 + 社交宽度 + 安全间距 + 版权宽度 + 右外边距
+  const totalNeeded = leftMargin + fullSocialW + safeBuffer + powerW + rightMargin;
+
+  if (totalNeeded > footerW && totalCount > 2) {
+    // 发生重叠，开启折叠模式
+    isSocialOverflow.value = true;
+    // 计算留给折叠后社交图标的可用宽度
+    const availableForIcons =
+      footerW - rightMargin - powerW - safeBuffer - leftMargin - btnWidth - gap;
+    const fitCount = Math.floor((availableForIcons + gap) / (iconSize + gap));
+    // 至少展示 2 个（或 1 个极端小屏），最多展示 3 个常驻
+    visibleSocialCount.value = Math.max(1, Math.min(3, fitCount || 2));
+  } else {
+    // 空间足够，无需折叠
+    isSocialOverflow.value = false;
+    visibleSocialCount.value = totalCount;
+    isSocialExpanded.value = false;
+  }
+};
+
+// 点击外部收起展开的社交平台
+const handleClickOutside = (e) => {
+  if (isSocialExpanded.value) {
+    const footerLeft = footerRef.value?.querySelector(".footer-left");
+    if (footerLeft && !footerLeft.contains(e.target)) {
+      isSocialExpanded.value = false;
+    }
+  }
+};
 
 // 加载配置数据
 // const siteStartDate = ref(import.meta.env.VITE_SITE_START);
@@ -113,12 +199,34 @@ watch(() => store.getPlayerLrc, measureMarquee, { immediate: true });
 let resizeTimer = null;
 const onResize = () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(measureMarquee, 150);
+  resizeTimer = setTimeout(() => {
+    measureMarquee();
+    computeOverflow();
+  }, 100);
 };
-onMounted(() => window.addEventListener("resize", onResize));
+
+let footerObserver = null;
+
+onMounted(() => {
+  window.addEventListener("resize", onResize);
+  document.addEventListener("click", handleClickOutside);
+  computeOverflow();
+  nextTick(() => {
+    computeOverflow();
+  });
+  if (footerRef.value && "ResizeObserver" in window) {
+    footerObserver = new ResizeObserver(() => {
+      computeOverflow();
+    });
+    footerObserver.observe(footerRef.value);
+  }
+});
+
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize);
+  document.removeEventListener("click", handleClickOutside);
   clearTimeout(resizeTimer);
+  if (footerObserver) footerObserver.disconnect();
 });
 
 const marqueeStyle = computed(() => {
@@ -132,15 +240,40 @@ const marqueeStyle = computed(() => {
 
 <style lang="scss" scoped>
 #footer {
+  position: relative;
   width: 100%;
   height: 46px;
   line-height: 46px;
   text-align: center;
   z-index: 0;
   font-size: 14px;
+  box-sizing: border-box;
   // 文字不换行
   word-break: keep-all;
   white-space: nowrap;
+
+  .footer-left {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+  }
+
+  .footer-right {
+    position: absolute;
+    right: 24px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    z-index: 2;
+    text-align: right;
+  }
+
   .power {
     animation: fade 0.3s;
   }
@@ -148,7 +281,10 @@ const marqueeStyle = computed(() => {
     animation: fade 0.3s;
   }
   .lrc {
-    padding: 0 20px;
+    width: 100%;
+    height: 100%;
+    padding: 0 180px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -206,19 +342,60 @@ const marqueeStyle = computed(() => {
   }
 
   @media (max-width: $bp-md) {
-    font-size: 0.9rem;
+    height: 44px;
+    line-height: 44px;
+    font-size: 0.82rem;
+
+    .footer-left {
+      left: 14px;
+    }
+
+    .footer-right {
+      right: 14px;
+    }
+
+    .lrc {
+      padding: 0 110px;
+    }
+
     &.blur {
-      font-size: 0.9rem;
+      font-size: 0.82rem;
     }
   }
+
   @media (max-width: 560px) {
     .c-hidden {
       display: none;
     }
   }
+
   @media (max-width: $bp-sm) {
+    height: 40px;
+    line-height: 40px;
+    font-size: 0.74rem;
+
+    .footer-left {
+      left: 10px;
+    }
+
+    .footer-right {
+      right: 10px;
+    }
+
+    .site-icp {
+      display: none;
+    }
+
     .hidden {
       display: none;
+    }
+
+    .lrc {
+      padding: 0 84px;
+    }
+
+    &.blur {
+      font-size: 0.74rem;
     }
   }
 }

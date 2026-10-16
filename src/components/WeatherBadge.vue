@@ -4,6 +4,7 @@
     v-show="!store.backgroundShow && !store.setOpenState"
     class="weather-badge glass-pill"
     :style="badgeStyle"
+    title="点击查看天气详情"
     @click="togglePanel"
   >
     <!-- 加载中 -->
@@ -30,72 +31,97 @@
     <span v-else class="badge-error" @click.stop="loadWeather(true)">天气获取失败</span>
   </div>
 
-  <!-- 天气详情面板（最近三天天气预报） -->
+  <!-- 天气详情弹窗（居中弹窗，视觉样式与时光胶囊保持一致） -->
   <Teleport to="body">
-    <Transition name="badge-fade">
-      <div v-show="panelShow" class="badge-panel" :style="panelStyle" @click.stop>
-        <!-- 面板头部：当前城市与实时天气概览 -->
-        <div class="panel-header">
-          <div class="header-main">
-            <div class="city-line">
-              <span class="city-name">{{ weather.city || "未知城市" }}</span>
-              <span class="forecast-tag">3天预报</span>
+    <Transition name="weather-fade">
+      <div v-if="panelShow" class="weather-mask" @click="closePanel">
+        <div class="weather-panel music-glass" @click.stop>
+          <!-- 弹窗顶栏 -->
+          <div class="panel-header">
+            <div class="title">
+              <span class="weather-emoji-icon">{{ weatherIcon }}</span>
+              <span class="weather-title">{{ weather.city ? weather.city + '天气' : '实时天气' }}</span>
+              <span class="forecast-tag" v-if="forecastList && forecastList.length">3天预报</span>
             </div>
-            <div class="weather-sub">
-              <span class="weather-cond">{{ weather.weather || "暂无信息" }}</span>
-              <span class="dot">·</span>
-              <span class="wind-info">{{ weather.winddirection }} {{ weather.windpower ? weather.windpower + "级" : "" }}</span>
-            </div>
+            <button
+              type="button"
+              class="weather-close"
+              aria-label="关闭天气详情"
+              @click="closePanel"
+            >
+              <close-one theme="filled" size="18" fill="#ffffffb0" />
+            </button>
           </div>
-          <div class="temp-now">
-            {{ weather.temperature !== null ? weather.temperature : "--" }}<span class="unit">℃</span>
-          </div>
-        </div>
 
-        <!-- 最近三天预报列表 -->
-        <div class="forecast-list" v-if="forecastList && forecastList.length">
-          <div
-            v-for="(item, index) in forecastList"
-            :key="item.date + index"
-            class="forecast-card"
-            :class="{ 'is-today': index === 0 }"
-          >
-            <!-- 日期 -->
-            <div class="date-col">
-              <span class="day-name">{{ item.dayName }}</span>
-              <span class="date-detail">{{ item.weekday }} {{ item.date }}</span>
-            </div>
-
-            <!-- 天气状况与图标 -->
-            <div class="weather-col">
-              <span class="emoji">{{ item.icon }}</span>
-              <span class="desc">{{ item.weather }}</span>
-            </div>
-
-            <!-- 温度区间与视觉条 -->
-            <div class="temp-col">
-              <span class="t-min">{{ item.tempMin }}°</span>
-              <div class="t-bar-box">
-                <div class="t-bar"></div>
+          <!-- 弹窗主体内容 -->
+          <div class="all-weather">
+            <!-- 实时天气看板 -->
+            <div class="current-card">
+              <div class="current-left">
+                <div class="temp-display">
+                  <span class="temp-num">{{ weather.temperature !== null ? weather.temperature : "--" }}</span>
+                  <span class="temp-unit">℃</span>
+                </div>
+                <div class="current-details">
+                  <span class="detail-item cond">{{ weather.weather || "未知天气" }}</span>
+                  <span class="sep">·</span>
+                  <span class="detail-item wind">{{ weather.winddirection }} {{ weather.windpower ? weather.windpower + "级" : "" }}</span>
+                  <template v-if="weather.humidity">
+                    <span class="sep">·</span>
+                    <span class="detail-item humidity">湿度 {{ weather.humidity }}%</span>
+                  </template>
+                </div>
               </div>
-              <span class="t-max">{{ item.tempMax }}°</span>
+              <div class="current-right">
+                <span class="big-emoji">{{ weatherIcon }}</span>
+              </div>
+            </div>
+
+            <!-- 最近三天预报列表 -->
+            <div class="forecast-list" v-if="forecastList && forecastList.length">
+              <div
+                v-for="(item, index) in forecastList"
+                :key="item.date + index"
+                class="forecast-card"
+                :class="{ 'is-today': index === 0 }"
+              >
+                <!-- 日期 -->
+                <div class="date-col">
+                  <span class="day-name">{{ item.dayName }}</span>
+                  <span class="date-detail">{{ item.weekday }} {{ item.date }}</span>
+                </div>
+
+                <!-- 天气状况与图标 -->
+                <div class="weather-col">
+                  <span class="emoji">{{ item.icon }}</span>
+                  <span class="desc">{{ item.weather }}</span>
+                </div>
+
+                <!-- 温度区间与视觉条 -->
+                <div class="temp-col">
+                  <span class="t-min">{{ item.tempMin }}°</span>
+                  <div class="t-bar-box">
+                    <div class="t-bar"></div>
+                  </div>
+                  <span class="t-max">{{ item.tempMax }}°</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 面板底部状态与刷新 -->
-        <div class="panel-footer">
-          <span class="footer-tip">
-            <span v-if="weather.humidity">湿度 {{ weather.humidity }}% · </span>
-            {{ weather.city }}气象数据
-          </span>
-          <span class="refresh-action" @click="loadWeather(true)" title="重新获取天气">
-            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 4v6h-6M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            刷新
-          </span>
+          <!-- 弹窗底部 -->
+          <div class="panel-footer">
+            <span class="footer-tip">
+              气象数据来源 · {{ weather.city || "本地" }}
+            </span>
+            <button type="button" class="refresh-action" @click="loadWeather(true)" title="重新获取天气">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              <span>刷新</span>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -104,10 +130,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { CloseOne } from "@icon-park/vue-next";
 import { getUapiWeather, getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
 import { showMessage } from "@/utils/message.js";
 import { windDirZh, normalizeWindPower } from "@/utils/weather.js";
-import { isCompactViewport } from "@/constants/breakpoint";
 import { mainStore } from "@/store";
 
 const store = mainStore();
@@ -118,7 +144,6 @@ const loading = ref(true);
 const panelShow = ref(false);
 const needScroll = ref(false);
 const textWrapRef = ref(null);
-const panelStyle = ref({});
 const badgeStyle = ref({}); // 动态最大宽度（移动端），避免与左侧 logo 网址重叠
 const forecastList = ref([]); // 最近三天预报列表
 
@@ -257,28 +282,9 @@ const checkNeedScroll = () => {
   });
 };
 
-// 判断是否处于紧凑移动端模式（真正触屏移动设备且 ≤$bp-md，或任意设备极窄视口 ≤$bp-sm）
-const isCompactHeader = () => {
-  const isTouchMobile = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-  return isCompactViewport(window.innerWidth, isTouchMobile);
-};
-
-// 移动端：按 logo 旁网址的实际宽度动态限制胶囊最大宽度，避免与网址重叠
+// 小窗口与移动端：天气胶囊独立位于第 2 行，宽度由 CSS 变量 --logo-text-width 与 Logo 域名精确对齐
 const updateBadgeWidth = () => {
-  if (!isCompactHeader()) {
-    badgeStyle.value = {};
-    return;
-  }
-  const logo = document.querySelector(".message .logo");
-  if (!logo) {
-    badgeStyle.value = {};
-    return;
-  }
-  const logoRect = logo.getBoundingClientRect();
-  // 胶囊可用宽度 = 视口宽度 - logo 网址右边界 - 菜单按钮(~46px) - 边距
-  const available = window.innerWidth - logoRect.right - 62;
-  const maxW = Math.max(90, Math.min(available, 200));
-  badgeStyle.value = { maxWidth: `${maxW}px` };
+  badgeStyle.value = {};
   checkNeedScroll();
 };
 
@@ -514,45 +520,23 @@ const loadWeather = async (silent) => {
   }
 };
 
-// 根据胶囊实时尺寸更新面板位置，做好各尺寸屏幕的安全边界适配
-const updatePanelPosition = () => {
-  const badge = document.querySelector(".weather-badge");
-  if (!badge) return;
-  const rect = badge.getBoundingClientRect();
-  const screenWidth = window.innerWidth;
-  const isMobile = screenWidth <= 480;
-  // 移动端：自适应宽度（最大不超过 330px，两侧至少留 12px 间距）
-  const width = isMobile ? Math.min(screenWidth - 24, 330) : 320;
-  // 面板默认右边缘对齐胶囊右边缘
-  let left = rect.right - width;
-  // 边界保护：避免面板超出视口左右边缘
-  if (left < 12) left = 12;
-  if (left + width > screenWidth - 12) {
-    left = screenWidth - 12 - width;
-  }
-  panelStyle.value = {
-    top: `${rect.bottom + 8}px`,
-    left: `${left}px`,
-    width: `${width}px`,
-  };
-};
-
-// 打开 / 关闭面板
+// 打开 / 关闭天气详情弹窗
 const togglePanel = () => {
   if (loading.value) return;
   panelShow.value = !panelShow.value;
-  if (panelShow.value) updatePanelPosition();
 };
 
-// 点击外部关闭面板
-const handleClickOutside = (e) => {
-  const badge = document.querySelector(".weather-badge");
-  if (badge && badge.contains(e.target)) return;
+const closePanel = () => {
   panelShow.value = false;
 };
 
-// 监听胶囊尺寸变化，面板打开时实时同步宽度与位置
-let badgeObserver = null;
+// ESC 键关闭弹窗
+const onKeydown = (e) => {
+  if (e.key === "Escape" && panelShow.value) {
+    closePanel();
+  }
+};
+
 let logoObserver = null;
 
 // 窗口尺寸变化：重新计算胶囊上限 + 跑马灯
@@ -563,16 +547,9 @@ const onResize = () => {
 
 onMounted(() => {
   loadWeather();
-  document.addEventListener("click", handleClickOutside);
   window.addEventListener("resize", onResize);
+  window.addEventListener("keydown", onKeydown);
   updateBadgeWidth();
-  const badge = document.querySelector(".weather-badge");
-  if (badge && "ResizeObserver" in window) {
-    badgeObserver = new ResizeObserver(() => {
-      if (panelShow.value) updatePanelPosition();
-    });
-    badgeObserver.observe(badge);
-  }
   // 监听 logo 元素尺寸变化（如字体/图片加载完成），同步胶囊上限
   const logo = document.querySelector(".message .logo");
   if (logo && "ResizeObserver" in window) {
@@ -582,9 +559,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside);
   window.removeEventListener("resize", onResize);
-  if (badgeObserver) badgeObserver.disconnect();
+  window.removeEventListener("keydown", onKeydown);
   if (logoObserver) logoObserver.disconnect();
 });
 </script>
@@ -670,13 +646,65 @@ onBeforeUnmount(() => {
     font-size: 0.8rem;
   }
 
-  @include mobile-viewport {
-    padding: 0 12px;
-    font-size: 0.85rem;
-    min-width: 0; // 允许 maxWidth 收窄生效，避免与 logo 网址重叠
+  @media (max-width: $bp-md) {
+    // 移动端/小窗口副标题模式：彻底去除胶囊底色、边框、阴影与高光，宽度与网站域名严格左右对齐
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: var(--logo-text-width, auto) !important;
+    max-width: var(--logo-text-width, 100%) !important;
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 3px 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    font-size: 0.84rem;
+    line-height: 1.25;
+    opacity: 0.88;
+    transform: none !important;
+
+    &:hover {
+      transform: none !important;
+      opacity: 1;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+    }
+    &:active {
+      transform: scale(0.97) !important;
+      opacity: 0.7;
+    }
+
+    .badge-icon {
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      margin-right: 4px;
+    }
 
     .badge-text-wrap {
-      max-width: 100px;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .badge-city {
+      margin-right: 3px;
+    }
+
+    .badge-weather {
+      margin-right: 2px;
+    }
+
+    .badge-temp {
+      font-weight: 600;
+      margin-left: auto; // 自动推到最右侧，与域名末端严格右对齐
+      padding-left: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
   }
 }
@@ -691,204 +719,276 @@ onBeforeUnmount(() => {
   }
 }
 
-// 天气详情面板
-.badge-panel {
+// 天气弹窗遮罩层（与时光胶囊 capsule-mask 视觉规范完全一致）
+.weather-mask {
   position: fixed;
-  z-index: 105;
-  padding: 16px 18px 14px;
-  border-radius: 20px;
-  background:
-    linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(255, 255, 255, 0.04) 40%,
-      rgba(0, 0, 0, 0.42) 100%
-    ),
-    rgba(14, 16, 22, 0.78);
-  backdrop-filter: blur(28px) saturate(170%);
-  -webkit-backdrop-filter: blur(28px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow:
-    0 24px 48px rgba(0, 0, 0, 0.55),
-    0 4px 16px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  color: #fff;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #00000060;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+// 天气弹窗面板容器（与时光胶囊 capsule-panel 同款玻璃拟态与圆角）
+.weather-panel {
+  width: 540px;
+  max-width: 88vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 28px;
+  padding: 20px 26px 18px;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  transform-origin: top right;
+
+  @media (max-width: $bp-sm) {
+    border-radius: 24px;
+    padding: 16px 18px 14px;
+  }
 
   .panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 12px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid rgb(255 255 255 / 10%);
 
-    .header-main {
+    .title {
       display: flex;
-      flex-direction: column;
-      gap: 3px;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
 
-      .city-line {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .city-name {
-          font-size: 1.15rem;
-          font-weight: 600;
-          color: #fff;
-          letter-spacing: 0.3px;
-        }
-
-        .forecast-tag {
-          font-size: 0.68rem;
-          padding: 1px 7px;
-          border-radius: 10px;
-          background: rgba(255, 255, 255, 0.14);
-          color: rgba(255, 255, 255, 0.9);
-          letter-spacing: 0.3px;
-          line-height: 1.4;
-        }
+      .weather-emoji-icon {
+        font-size: 1.35rem;
+        line-height: 1;
       }
 
-      .weather-sub {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 0.82rem;
-        color: rgba(255, 255, 255, 0.68);
+      .weather-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.5px;
+        text-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+      }
 
-        .dot {
-          opacity: 0.5;
-        }
+      .forecast-tag {
+        font-size: 0.72rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.9);
+        letter-spacing: 0.3px;
+        line-height: 1.4;
       }
     }
 
-    .temp-now {
-      font-size: 1.75rem;
-      font-weight: 700;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-      color: #fff;
+    // 圆形关闭按钮（与时光胶囊 capsule-close 同构）
+    .weather-close {
+      width: 32px;
+      height: 32px;
       display: flex;
-      align-items: baseline;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      cursor: pointer;
+      background: rgb(255 255 255 / 8%);
+      border: 1px solid rgb(255 255 255 / 12%);
+      transition: transform 0.2s, background 0.2s;
 
-      .unit {
-        font-size: 0.95rem;
-        font-weight: 400;
-        margin-left: 2px;
-        opacity: 0.85;
+      .i-icon,
+      svg {
+        display: block;
+        line-height: 0;
+      }
+      &:hover {
+        transform: scale(1.1);
+        background: rgb(255 255 255 / 16%);
+      }
+      &:active {
+        transform: scale(0.92);
       }
     }
   }
 
-  .forecast-list {
+  .all-weather {
     display: flex;
     flex-direction: column;
-    gap: 7px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 12px;
+    padding-top: 14px;
 
-    .forecast-card {
+    // 实时天气看板
+    .current-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 7px 10px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition:
-        background 0.2s,
-        border-color 0.2s;
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      &.is-today {
-        background: rgba(255, 255, 255, 0.09);
-        border-color: rgba(255, 255, 255, 0.15);
-
-        .date-col .day-name {
-          color: #fff;
-        }
-      }
-
-      .date-col {
+      .current-left {
         display: flex;
         flex-direction: column;
-        width: 68px;
-        flex-shrink: 0;
+        gap: 5px;
 
-        .day-name {
-          font-size: 0.86rem;
-          font-weight: 600;
-          color: rgba(255, 255, 255, 0.92);
-        }
-
-        .date-detail {
-          font-size: 0.68rem;
-          color: rgba(255, 255, 255, 0.48);
-          margin-top: 1px;
-          white-space: nowrap;
-        }
-      }
-
-      .weather-col {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex: 1;
-        padding: 0 8px;
-
-        .emoji {
-          font-size: 1.15rem;
-          line-height: 1;
-        }
-
-        .desc {
-          font-size: 0.84rem;
-          color: rgba(255, 255, 255, 0.85);
-          white-space: nowrap;
-        }
-      }
-
-      .temp-col {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-
-        .t-min {
-          font-size: 0.82rem;
-          font-weight: 500;
-          color: rgba(255, 255, 255, 0.52);
-          width: 22px;
-          text-align: right;
+        .temp-display {
+          display: flex;
+          align-items: baseline;
+          color: #fff;
           font-variant-numeric: tabular-nums;
-        }
 
-        .t-bar-box {
-          width: 32px;
-          height: 4px;
-          background: rgba(255, 255, 255, 0.12);
-          border-radius: 2px;
-          overflow: hidden;
-
-          .t-bar {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 55%, #f6d365 100%);
-            border-radius: 2px;
+          .temp-num {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+          }
+          .temp-unit {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-left: 2px;
+            opacity: 0.85;
           }
         }
 
-        .t-max {
+        .current-details {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 6px;
           font-size: 0.86rem;
-          font-weight: 600;
-          color: #fff;
-          width: 24px;
-          text-align: left;
-          font-variant-numeric: tabular-nums;
+          color: rgba(255, 255, 255, 0.72);
+
+          .sep {
+            opacity: 0.45;
+          }
+        }
+      }
+
+      .current-right {
+        .big-emoji {
+          font-size: 2.8rem;
+          line-height: 1;
+          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+        }
+      }
+    }
+
+    // 预报列表
+    .forecast-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .forecast-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transition: background 0.2s, border-color 0.2s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        &.is-today {
+          background: rgba(255, 255, 255, 0.09);
+          border-color: rgba(255, 255, 255, 0.16);
+
+          .date-col .day-name {
+            color: #fff;
+          }
+        }
+
+        .date-col {
+          display: flex;
+          flex-direction: column;
+          width: 72px;
+          flex-shrink: 0;
+
+          .day-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+          }
+          .date-detail {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.48);
+            margin-top: 1px;
+            white-space: nowrap;
+          }
+        }
+
+        .weather-col {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+          min-width: 0;
+          padding: 0 10px;
+
+          .emoji {
+            font-size: 1.2rem;
+            line-height: 1;
+            flex-shrink: 0;
+          }
+
+          .desc {
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.88);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+
+        .temp-col {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+
+          .t-min {
+            font-size: 0.86rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.52);
+            width: 24px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+          }
+
+          .t-bar-box {
+            width: 44px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 3px;
+            overflow: hidden;
+
+            .t-bar {
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(90deg, #4facfe 0%, #00f2fe 55%, #f6d365 100%);
+              border-radius: 3px;
+            }
+          }
+
+          .t-max {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            width: 26px;
+            text-align: left;
+            font-variant-numeric: tabular-nums;
+          }
         }
       }
     }
@@ -898,65 +998,128 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 10px;
-    padding-top: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 
     .footer-tip {
-      font-size: 0.72rem;
-      color: rgba(255, 255, 255, 0.42);
+      font-size: 0.74rem;
+      color: rgba(255, 255, 255, 0.45);
     }
 
     .refresh-action {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      font-size: 0.72rem;
-      color: rgba(255, 255, 255, 0.65);
+      gap: 5px;
+      font-size: 0.74rem;
+      color: rgba(255, 255, 255, 0.7);
       cursor: pointer;
+      background: transparent;
+      border: none;
       user-select: none;
-      transition: color 0.2s;
+      transition: color 0.2s, transform 0.2s;
+
+      svg {
+        display: block;
+      }
 
       &:hover {
         color: #fff;
+        transform: scale(1.04);
+      }
+      &:active {
+        transform: scale(0.96);
       }
     }
   }
 
-  @include mobile-viewport {
-    padding: 14px 14px 12px;
-    border-radius: 18px;
+  @media (max-width: $bp-sm) {
+    .all-weather {
+      gap: 10px;
+      padding-top: 10px;
 
-    .forecast-list .forecast-card {
-      padding: 6px 8px;
-
-      .date-col {
-        width: 60px;
+      .current-card {
+        padding: 10px 14px;
+        .current-left {
+          .temp-display .temp-num {
+            font-size: 1.85rem;
+          }
+          .current-details {
+            font-size: 0.8rem;
+          }
+        }
+        .current-right .big-emoji {
+          font-size: 2.2rem;
+        }
       }
 
-      .temp-col .t-bar-box {
-        width: 24px;
+      .forecast-list .forecast-card {
+        padding: 7px 10px;
+
+        .date-col {
+          width: 58px;
+          .day-name {
+            font-size: 0.84rem;
+          }
+          .date-detail {
+            font-size: 0.66rem;
+          }
+        }
+
+        .weather-col {
+          padding: 0 6px;
+          gap: 5px;
+          .emoji {
+            font-size: 1.1rem;
+          }
+          .desc {
+            font-size: 0.82rem;
+          }
+        }
+
+        .temp-col {
+          gap: 5px;
+          .t-min,
+          .t-max {
+            font-size: 0.8rem;
+          }
+          .t-bar-box {
+            width: 26px;
+          }
+        }
       }
     }
   }
 }
 
-// 统一气泡面板过渡动画
-.badge-fade-enter-active,
-.badge-fade-leave-active {
-  transition:
-    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+// 统一弹窗过渡动画（与时光胶囊 capsule-fade 完全一致）
+.weather-fade-enter-active,
+.weather-fade-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .weather-panel {
+    transition:
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 
-.badge-fade-leave-active {
+.weather-fade-leave-active {
   transition-duration: 0.25s;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  .weather-panel {
+    transition-duration: 0.25s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
-.badge-fade-enter-from,
-.badge-fade-leave-to {
+.weather-fade-enter-from,
+.weather-fade-leave-to {
   opacity: 0;
-  transform: scale(0.94) translateY(-10px);
+
+  .weather-panel {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
 }
 </style>

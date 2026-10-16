@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import { isMobileWidth } from "@/constants/breakpoint";
 
 export const mainStore = defineStore("main", {
   state: () => {
@@ -50,7 +49,8 @@ export const mainStore = defineStore("main", {
     // 更改当前页面宽度
     setInnerWidth(value) {
       this.innerWidth = value;
-      if (!isMobileWidth(value)) {
+      // 当导航处于展开完整显示状态时，自动关闭抽屉
+      if (!this.navCollapsed) {
         this.mobileOpenState = false;
       }
     },
