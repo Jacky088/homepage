@@ -11,7 +11,7 @@
     <span v-if="loading" class="badge-loading">定位中…</span>
     <!-- 天气数据 -->
     <template v-else-if="weather.city && weather.temperature !== null">
-      <span class="badge-icon">{{ weatherIcon }}</span>
+      <WeatherIcon :name="weather.weather" :size="16" class="badge-icon-svg" />
       <!-- 可滚动文字区（城市 + 天气），过长时跑马灯 -->
       <span class="badge-text-wrap" ref="textWrapRef">
         <span class="badge-text" :class="{ 'is-marquee': needScroll }">
@@ -39,7 +39,7 @@
           <!-- 弹窗顶栏 -->
           <div class="panel-header">
             <div class="title">
-              <span class="weather-emoji-icon">{{ weatherIcon }}</span>
+              <WeatherIcon :name="weather.weather" :size="20" class="panel-title-icon" />
               <span class="weather-title">{{ weather.city ? weather.city + '天气' : '实时天气' }}</span>
               <span class="forecast-tag" v-if="forecastList && forecastList.length">3天预报</span>
             </div>
@@ -73,7 +73,7 @@
                 </div>
               </div>
               <div class="current-right">
-                <span class="big-emoji">{{ weatherIcon }}</span>
+                <WeatherIcon :name="weather.weather" :size="48" class="big-weather-icon" />
               </div>
             </div>
 
@@ -91,9 +91,9 @@
                   <span class="date-detail">{{ item.weekday }} {{ item.date }}</span>
                 </div>
 
-                <!-- 天气状况与图标 -->
+                <!-- 天气状况与矢量图标 -->
                 <div class="weather-col">
-                  <span class="emoji">{{ item.icon }}</span>
+                  <WeatherIcon :name="item.weather" :size="19" class="forecast-icon" />
                   <span class="desc">{{ item.weather }}</span>
                 </div>
 
@@ -129,22 +129,28 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { CloseOne } from "@icon-park/vue-next";
+import WeatherIcon from "@/components/WeatherIcon.vue";
 import { getUapiWeather, getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
 import { showMessage } from "@/utils/message.js";
-import { windDirZh, normalizeWindPower } from "@/utils/weather.js";
+import {
+  windDirZh,
+  normalizeWindPower,
+  normalizeWeatherZh,
+  wttrWeatherZh,
+  amapWeatherZh,
+} from "@/utils/weather.js";
 import { mainStore } from "@/store";
 
 const store = mainStore();
-
 const mainKey = import.meta.env.VITE_WEATHER_KEY;
 
 const loading = ref(true);
 const panelShow = ref(false);
 const needScroll = ref(false);
 const textWrapRef = ref(null);
-const badgeStyle = ref({}); // 动态最大宽度（移动端），避免与左侧 logo 网址重叠
+const badgeStyle = ref({});
 const forecastList = ref([]); // 最近三天预报列表
 
 const weather = ref({
@@ -155,138 +161,6 @@ const weather = ref({
   windpower: null,
   humidity: null,
 });
-
-// 天气图标（根据天气文本匹配 emoji）
-const getWeatherEmoji = (text) => {
-  const t = text || "";
-  if (t.includes("雷")) return "⛈";
-  if (t.includes("雨夹雪")) return "🌨";
-  if (t.includes("暴雪") || t.includes("大雪")) return "❄";
-  if (t.includes("雪")) return "🌨";
-  if (t.includes("暴雨") || t.includes("大雨")) return "🌧";
-  if (t.includes("雨")) return "🌦";
-  if (t.includes("雾") || t.includes("霾") || t.includes("沙") || t.includes("尘")) return "🌫";
-  if (t.includes("阴")) return "☁";
-  if (t.includes("云")) return "⛅";
-  if (t.includes("晴")) return "☀";
-  return "🌡";
-};
-
-const weatherIcon = computed(() => getWeatherEmoji(weather.value.weather));
-
-// 高德天气描述转中文（高德本身就返回中文，这里兜底处理）
-const amapWeatherZh = (weather) => {
-  if (!weather) return "";
-  const map = {
-    晴: "晴",
-    多云: "多云",
-    少云: "少云",
-    晴间多云: "晴间多云",
-    阴: "阴",
-    小雨: "小雨",
-    中雨: "中雨",
-    大雨: "大雨",
-    暴雨: "暴雨",
-    雷阵雨: "雷阵雨",
-    冰雹: "冰雹",
-    雨夹雪: "雨夹雪",
-    小雪: "小雪",
-    中雪: "中雪",
-    大雪: "大雪",
-    暴雪: "暴雪",
-    雾: "雾",
-    霾: "霾",
-    冻雨: "冻雨",
-    阵雨: "阵雨",
-    阵雪: "阵雪",
-    浮尘: "浮尘",
-    扬沙: "扬沙",
-    沙尘暴: "沙尘暴",
-  };
-  return map[weather] || weather;
-};
-
-// wttr.in 天气描述英文转中文（基于 WorldWeatherOnline 天气代码表）
-const wttrWeatherZh = (text) => {
-  if (!text) return "";
-  const map = {
-    Sunny: "晴",
-    Clear: "晴",
-    "Partly Cloudy": "局部多云",
-    Cloudy: "多云",
-    Overcast: "阴",
-    Mist: "薄雾",
-    "Patchy rain nearby": "附近有零星降雨",
-    "Patchy snow nearby": "附近有零星降雪",
-    "Patchy sleet nearby": "附近有零星雨夹雪",
-    "Patchy freezing drizzle nearby": "附近有零星冻毛毛雨",
-    "Thundery outbreaks in nearby": "附近有雷暴",
-    "Blowing snow": "吹雪",
-    Blizzard: "暴风雪",
-    Fog: "雾",
-    "Freezing fog": "冻雾",
-    "Patchy light drizzle": "零星小毛毛雨",
-    "Light drizzle": "小毛毛雨",
-    "Freezing drizzle": "冻毛毛雨",
-    "Heavy freezing drizzle": "强冻毛毛雨",
-    "Patchy light rain": "零星小雨",
-    "Light rain": "小雨",
-    "Moderate rain at times": "时有中雨",
-    "Moderate rain": "中雨",
-    "Heavy rain at times": "时有大雨",
-    "Heavy rain": "大雨",
-    "Light freezing rain": "小冻雨",
-    "Moderate or heavy freezing rain": "中到大冻雨",
-    "Light sleet": "小雨夹雪",
-    "Moderate or heavy sleet": "中到大雨夹雪",
-    "Patchy light snow": "零星小雪",
-    "Light snow": "小雪",
-    "Patchy moderate snow": "零星中雪",
-    "Moderate snow": "中雪",
-    "Patchy heavy snow": "零星大雪",
-    "Heavy snow": "大雪",
-    "Ice pellets": "冰粒",
-    "Light rain shower": "小阵雨",
-    "Moderate or heavy rain shower": "中到大阵雨",
-    "Torrential rain shower": "特大阵雨",
-    "Light sleet showers": "小阵雨夹雪",
-    "Moderate or heavy sleet showers": "中到大阵雨夹雪",
-    "Light snow showers": "小阵雪",
-    "Moderate or heavy snow showers": "中到大阵雪",
-    "Light showers of ice pellets": "小阵冰粒",
-    "Moderate or heavy showers of ice pellets": "中到大阵冰粒",
-    "Patchy light rain in area with thunder": "附近有零星雷雨",
-    "Moderate or heavy rain in area with thunder": "附近有中到大雷雨",
-    "Patchy light snow in area with thunder": "附近有零星雷雪",
-    "Moderate or heavy snow in area with thunder": "附近有中到大雷雪",
-    Haze: "霾",
-    "Smoky haze": "烟雾",
-  };
-  const key = text.trim();
-  if (map[key]) return map[key];
-  // 大小写不敏感匹配（wttr.in 不同地区可能返回不同大小写）
-  for (const k in map) {
-    if (key.toLowerCase() === k.toLowerCase()) return map[k];
-  }
-  return key;
-};
-
-// 检测文字是否需要滚动
-const checkNeedScroll = () => {
-  nextTick(() => {
-    const wrap = textWrapRef.value;
-    if (!wrap) return;
-    const inner = wrap.querySelector(".badge-text-inner");
-    if (!inner) return;
-    needScroll.value = inner.scrollWidth > wrap.clientWidth;
-  });
-};
-
-// 小窗口与移动端：天气胶囊独立位于第 2 行，宽度由 CSS 变量 --logo-text-width 与 Logo 域名精确对齐
-const updateBadgeWidth = () => {
-  badgeStyle.value = {};
-  checkNeedScroll();
-};
 
 // 解析 wttr.in 的未来 3 天预报
 const parseWttrForecast = (wttrData) => {
@@ -300,7 +174,7 @@ const parseWttrForecast = (wttrData) => {
       (noon.lang_zh && noon.lang_zh[0] && noon.lang_zh[0].value) ||
       (noon.weatherDesc && noon.weatherDesc[0] && noon.weatherDesc[0].value) ||
       "晴";
-    const desc = wttrWeatherZh(rawDesc);
+    const desc = normalizeWeatherZh(wttrWeatherZh(rawDesc));
     const dateObj = new Date(w.date);
     const month = dateObj.getMonth() + 1;
     const day = dateObj.getDate();
@@ -314,7 +188,6 @@ const parseWttrForecast = (wttrData) => {
       weekday,
       dayName: dayNames[i] || `${i}天后`,
       weather: desc,
-      icon: getWeatherEmoji(desc),
       tempMin: Math.round(Number(w.mintempC || 0)),
       tempMax: Math.round(Number(w.maxtempC || 0)),
       wind: `${windDir} ${windPower}`.trim(),
@@ -329,7 +202,8 @@ const parseAmapForecast = (casts) => {
   const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
   return casts.slice(0, 3).map((c, i) => {
-    const desc = amapWeatherZh(c.dayweather || c.nightweather || "晴");
+    const rawDesc = c.dayweather || c.nightweather || "晴";
+    const desc = normalizeWeatherZh(amapWeatherZh(rawDesc));
     const dateObj = new Date(c.date);
     const month = dateObj.getMonth() + 1;
     const day = dateObj.getDate();
@@ -343,7 +217,6 @@ const parseAmapForecast = (casts) => {
       weekday,
       dayName: dayNames[i] || `${i}天后`,
       weather: desc,
-      icon: getWeatherEmoji(desc),
       tempMin: Math.round(Number(c.nighttemp || c.daytemp || 0)),
       tempMax: Math.round(Number(c.daytemp || c.nighttemp || 0)),
       wind: windText,
@@ -361,13 +234,12 @@ const generateFallbackForecast = (currentWeather, currentTemp) => {
 
   return [0, 1, 2].map((i) => {
     const d = new Date(now.getTime() + i * 24 * 3600 * 1000);
-    const desc = weathers[i];
+    const desc = normalizeWeatherZh(weathers[i]);
     return {
       date: `${d.getMonth() + 1}月${d.getDate()}日`,
       weekday: weekdays[d.getDay()],
       dayName: dayNames[i],
       weather: desc,
-      icon: getWeatherEmoji(desc),
       tempMin: baseTemp - (i === 0 ? 3 : i === 1 ? 4 : 2),
       tempMax: baseTemp + (i === 0 ? 3 : i === 1 ? 2 : 4),
       wind: "微风 2级",
@@ -375,11 +247,27 @@ const generateFallbackForecast = (currentWeather, currentTemp) => {
   });
 };
 
-// 主源：uapis 天气（不传城市时按访客 IP 自动定位，无需额外定位接口）
+// 检测文字是否需要滚动
+const checkNeedScroll = () => {
+  nextTick(() => {
+    const wrap = textWrapRef.value;
+    if (!wrap) return;
+    const inner = wrap.querySelector(".badge-text-inner");
+    if (!inner) return;
+    needScroll.value = inner.scrollWidth > wrap.clientWidth;
+  });
+};
+
+const updateBadgeWidth = () => {
+  badgeStyle.value = {};
+  checkNeedScroll();
+};
+
+// 主源：uapis 天气（不传城市时按访客 IP 自动定位）
 const loadByUapis = async () => {
   const data = await getUapiWeather();
   const city = data.city || data.province || "未知城市";
-  const desc = amapWeatherZh(data.weather);
+  const desc = normalizeWeatherZh(amapWeatherZh(data.weather));
   const currentTemp = data.temperature;
 
   weather.value = {
@@ -391,7 +279,6 @@ const loadByUapis = async () => {
     humidity: data.humidity || null,
   };
 
-  // 尝试拉取未来三天预报（通过备用源 wttr.in），失败时平滑兜底
   try {
     const wttrData = await getOtherWeather(city);
     const parsed = parseWttrForecast(wttrData);
@@ -419,7 +306,7 @@ const loadByAmap = async () => {
 
   if (liveRes.infocode !== "10000") throw new Error("天气查询失败");
   const live = liveRes.lives[0];
-  const desc = amapWeatherZh(live.weather);
+  const desc = normalizeWeatherZh(amapWeatherZh(live.weather));
   const currentTemp = live.temperature;
 
   weather.value = {
@@ -441,12 +328,11 @@ const loadByAmap = async () => {
   forecastList.value = generateFallbackForecast(desc, currentTemp);
 };
 
-// IP 定位 + wttr.in
+// IP 定位 + wttr.in（境外兜底源）
 const loadByIp = async () => {
   const cityInfo = await getCityByIp();
   if (!cityInfo || !cityInfo.en) throw new Error("定位城市为空");
 
-  // 用英文城市名查询 wttr.in（更准确），中文名展示
   const result = await getOtherWeather(cityInfo.en);
   if (!result || !result.current_condition || result.current_condition.length === 0) {
     throw new Error("备用天气接口返回错误");
@@ -456,10 +342,10 @@ const loadByIp = async () => {
   const zhValue = cond.lang_zh && cond.lang_zh[0] && cond.lang_zh[0].value;
   const enValue = cond.weatherDesc && cond.weatherDesc[0] && cond.weatherDesc[0].value;
   if (zhValue && !/^[a-zA-Z\s]+$/.test(zhValue)) {
-    weatherText = zhValue;
+    weatherText = normalizeWeatherZh(zhValue);
   } else {
     const source = zhValue || enValue || "";
-    weatherText = wttrWeatherZh(source);
+    weatherText = normalizeWeatherZh(wttrWeatherZh(source));
   }
   weather.value = {
     city: cityInfo.zh || cityInfo.en,
@@ -482,7 +368,6 @@ const loadByIp = async () => {
 const loadWeather = async (silent) => {
   loading.value = true;
   try {
-    // 降级链：uapis（主源，国内稳定）→ 高德（需自配 Key）→ ipinfo/ipapi + wttr.in（境外兜底）
     const sources = [{ name: "uapis", run: loadByUapis }];
     if (mainKey) sources.push({ name: "高德", run: loadByAmap });
     sources.push({ name: "境外 IP + wttr.in", run: loadByIp });
@@ -520,7 +405,6 @@ const loadWeather = async (silent) => {
   }
 };
 
-// 打开 / 关闭天气详情弹窗
 const togglePanel = () => {
   if (loading.value) return;
   panelShow.value = !panelShow.value;
@@ -530,7 +414,6 @@ const closePanel = () => {
   panelShow.value = false;
 };
 
-// ESC 键关闭弹窗
 const onKeydown = (e) => {
   if (e.key === "Escape" && panelShow.value) {
     closePanel();
@@ -539,7 +422,6 @@ const onKeydown = (e) => {
 
 let logoObserver = null;
 
-// 窗口尺寸变化：重新计算胶囊上限 + 跑马灯
 const onResize = () => {
   updateBadgeWidth();
   checkNeedScroll();
@@ -550,7 +432,7 @@ onMounted(() => {
   window.addEventListener("resize", onResize);
   window.addEventListener("keydown", onKeydown);
   updateBadgeWidth();
-  // 监听 logo 元素尺寸变化（如字体/图片加载完成），同步胶囊上限
+
   const logo = document.querySelector(".message .logo");
   if (logo && "ResizeObserver" in window) {
     logoObserver = new ResizeObserver(() => updateBadgeWidth());
@@ -561,7 +443,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize);
   window.removeEventListener("keydown", onKeydown);
-  if (logoObserver) logoObserver.disconnect();
+  if (logoObserver) {
+    logoObserver.disconnect();
+    logoObserver = null;
+  }
 });
 </script>
 
@@ -576,7 +461,7 @@ onBeforeUnmount(() => {
   height: 38px;
   padding: 0 14px;
   border-radius: 19px;
-  font-size: 0.9rem;
+  font-family: "HarmonyOS_Regular", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #fff;
   cursor: pointer;
   user-select: none;
@@ -595,11 +480,13 @@ onBeforeUnmount(() => {
     transform: translateY(0) scale(0.96);
   }
 
-  .badge-icon {
-    font-size: 1rem;
-    line-height: 1;
+  .badge-icon-svg {
     flex-shrink: 0;
+    line-height: 1;
+    color: #fff;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
   }
+
   // 文字滚动容器：限制最大宽度
   .badge-text-wrap {
     display: block;
@@ -609,10 +496,11 @@ onBeforeUnmount(() => {
     flex-shrink: 1;
     transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   .badge-text {
     display: inline-flex;
     white-space: nowrap;
-    opacity: 0.85;
+    opacity: 1;
 
     &.is-marquee {
       display: flex;
@@ -627,27 +515,53 @@ onBeforeUnmount(() => {
       align-items: center;
       flex-shrink: 0;
       &.clone {
-        padding-left: 1.5em; // 两段文字间距
+        padding-left: 1.5em;
       }
     }
   }
-  .badge-city {
-    margin-right: 6px;
-  }
+
+  // 统一字体样式：字重、字号、颜色、投影完全一致
+  .badge-city,
+  .badge-weather,
   .badge-temp {
-    font-weight: 600;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    line-height: 1.2;
+    letter-spacing: 0.2px;
+  }
+
+  .badge-city {
+    margin-right: 4px;
+  }
+
+  .badge-weather {
+    margin-right: 0;
+  }
+
+  .badge-temp {
+    margin-left: auto;
+    padding-left: 6px;
     flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
   }
+
   .badge-loading {
-    opacity: 0.7;
+    opacity: 0.8;
+    font-size: 0.84rem;
   }
+
   .badge-error {
-    opacity: 0.7;
-    font-size: 0.8rem;
+    opacity: 0.8;
+    font-size: 0.82rem;
   }
 
   @media (max-width: $bp-md) {
-    // 移动端/小窗口副标题模式：彻底去除胶囊底色、边框、阴影与高光，宽度与网站域名严格左右对齐
+    // 移动端/小窗口副标题模式：
+    // 1. 去除胶囊底色、边框与投影
+    // 2. 宽度严格等于 --logo-full-width，确保左侧与 Logo 图标左对齐，右侧与网址右对齐
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -655,17 +569,15 @@ onBeforeUnmount(() => {
     box-shadow: none !important;
     height: auto !important;
     min-height: 0 !important;
-    width: var(--logo-text-width, auto) !important;
-    max-width: var(--logo-text-width, 100%) !important;
+    width: var(--logo-full-width, auto) !important;
+    max-width: var(--logo-full-width, 100%) !important;
     box-sizing: border-box !important;
     display: inline-flex !important;
     align-items: center !important;
-    padding: 3px 0 !important;
+    padding: 2px 0 !important;
     margin: 0 !important;
     border-radius: 0 !important;
-    font-size: 0.84rem;
-    line-height: 1.25;
-    opacity: 0.88;
+    opacity: 1 !important;
     transform: none !important;
 
     &:hover {
@@ -674,14 +586,13 @@ onBeforeUnmount(() => {
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
     }
     &:active {
-      transform: scale(0.97) !important;
-      opacity: 0.7;
+      transform: scale(0.98) !important;
+      opacity: 0.85;
     }
 
-    .badge-icon {
-      font-size: 0.95rem;
+    .badge-icon-svg {
+      margin-right: 5px;
       flex-shrink: 0;
-      margin-right: 4px;
     }
 
     .badge-text-wrap {
@@ -691,18 +602,24 @@ onBeforeUnmount(() => {
       white-space: nowrap;
     }
 
-    .badge-city {
-      margin-right: 3px;
+    // 字体样式与属性严格统一
+    .badge-city,
+    .badge-weather,
+    .badge-temp {
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.95);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
     }
 
-    .badge-weather {
-      margin-right: 2px;
+    .badge-city {
+      margin-right: 4px;
     }
 
     .badge-temp {
-      font-weight: 600;
-      margin-left: auto; // 自动推到最右侧，与域名末端严格右对齐
-      padding-left: 4px;
+      margin-left: auto !important;
+      padding-left: 6px;
+      text-align: right;
       flex-shrink: 0;
       white-space: nowrap;
     }
@@ -730,86 +647,87 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #00000060;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
-// 天气弹窗面板容器（与时光胶囊 capsule-panel 同款玻璃拟态与圆角）
+// 居中弹窗主体（与时光胶囊 .capsule-modal 尺寸、质感、毛玻璃完全一致）
 .weather-panel {
-  width: 540px;
-  max-width: 88vw;
-  max-height: 85vh;
-  overflow-y: auto;
-  border-radius: 28px;
-  padding: 20px 26px 18px;
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  padding: 22px 24px 20px;
+  border-radius: 24px;
+  color: #fff;
+  cursor: default;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
 
-  @media (max-width: $bp-sm) {
-    border-radius: 24px;
-    padding: 16px 18px 14px;
-  }
-
+  // 顶栏
   .panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 0 12px;
-    border-bottom: 1px solid rgb(255 255 255 / 10%);
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
     .title {
       display: flex;
-      flex-direction: row;
       align-items: center;
       gap: 8px;
 
-      .weather-emoji-icon {
-        font-size: 1.35rem;
-        line-height: 1;
+      .panel-title-icon {
+        color: #fff;
+        flex-shrink: 0;
       }
 
       .weather-title {
-        font-size: 1.05rem;
+        font-size: 1.15rem;
         font-weight: 600;
-        color: #fff;
         letter-spacing: 0.5px;
-        text-shadow: 0 1px 4px rgb(0 0 0 / 30%);
       }
 
       .forecast-tag {
         font-size: 0.72rem;
-        padding: 2px 8px;
+        padding: 2px 7px;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.12);
-        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: rgba(255, 255, 255, 0.85);
         letter-spacing: 0.3px;
-        line-height: 1.4;
       }
     }
 
-    // 圆形关闭按钮（与时光胶囊 capsule-close 同构）
     .weather-close {
-      width: 32px;
-      height: 32px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 50%;
       cursor: pointer;
-      background: rgb(255 255 255 / 8%);
-      border: 1px solid rgb(255 255 255 / 12%);
-      transition: transform 0.2s, background 0.2s;
+      color: rgba(255, 255, 255, 0.8);
+      transition:
+        background-color 0.2s,
+        transform 0.2s,
+        color 0.2s;
 
-      .i-icon,
-      svg {
-        display: block;
-        line-height: 0;
-      }
       &:hover {
-        transform: scale(1.1);
-        background: rgb(255 255 255 / 16%);
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        transform: scale(1.06);
       }
       &:active {
         transform: scale(0.92);
@@ -817,26 +735,27 @@ onBeforeUnmount(() => {
     }
   }
 
+  // 弹窗主体看板
   .all-weather {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     padding-top: 14px;
 
-    // 实时天气看板
+    // 当日实时天气大卡片
     .current-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 14px 18px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
 
       .current-left {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 6px;
 
         .temp-display {
           display: flex;
@@ -872,10 +791,12 @@ onBeforeUnmount(() => {
       }
 
       .current-right {
-        .big-emoji {
-          font-size: 2.8rem;
-          line-height: 1;
-          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .big-weather-icon {
+          color: #fff;
+          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
         }
       }
     }
@@ -936,9 +857,8 @@ onBeforeUnmount(() => {
           min-width: 0;
           padding: 0 10px;
 
-          .emoji {
-            font-size: 1.2rem;
-            line-height: 1;
+          .forecast-icon {
+            color: rgba(255, 255, 255, 0.95);
             flex-shrink: 0;
           }
 
@@ -994,6 +914,7 @@ onBeforeUnmount(() => {
     }
   }
 
+  // 弹窗底部
   .panel-footer {
     display: flex;
     align-items: center;
@@ -1048,8 +969,9 @@ onBeforeUnmount(() => {
             font-size: 0.8rem;
           }
         }
-        .current-right .big-emoji {
-          font-size: 2.2rem;
+        .current-right .big-weather-icon {
+          width: 40px !important;
+          height: 40px !important;
         }
       }
 
@@ -1069,9 +991,6 @@ onBeforeUnmount(() => {
         .weather-col {
           padding: 0 6px;
           gap: 5px;
-          .emoji {
-            font-size: 1.1rem;
-          }
           .desc {
             font-size: 0.82rem;
           }

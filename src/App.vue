@@ -427,7 +427,7 @@ onBeforeUnmount(() => {
         grid-area: weather;
         justify-self: start;
         margin-left: 0;
-        padding-left: var(--logo-text-left, 48px); // 动态匹配 Logo 域名文字左起始线
+        padding-left: 0; // 左边缘与 Logo 图标最左边缘严格对齐
         display: flex;
         align-items: center;
       }
