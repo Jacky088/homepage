@@ -11,6 +11,7 @@
         rel="noopener noreferrer"
         :title="item.tip || item.name"
         class="social-item"
+        :aria-label="item.name"
       >
         <img class="icon" :src="item.icon" :alt="item.name" />
       </a>
@@ -25,6 +26,7 @@
           rel="noopener noreferrer"
           :title="item.tip || item.name"
           class="social-item overflow-item"
+          :aria-label="item.name"
         >
           <img class="icon" :src="item.icon" :alt="item.name" />
         </a>
@@ -43,8 +45,8 @@
         <svg
           class="arrow-icon"
           viewBox="0 0 24 24"
-          width="12"
-          height="12"
+          width="13"
+          height="13"
           stroke="currentColor"
           stroke-width="2.4"
           fill="none"
@@ -103,31 +105,48 @@ const overflowLinks = computed(() => {
   .link-list {
     display: flex;
     align-items: center;
-    gap: 14px; // 宽敞呼吸间距，图标不再紧贴
+    gap: 10px; // 舒适呼吸间距
   }
 
+  // 社交图标触控按钮（规范的触控热区与触摸视觉反馈）
   .social-item {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     line-height: 1;
     flex-shrink: 0;
+    background: transparent;
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.14);
+      transform: translateY(-2px);
+
+      .icon {
+        transform: scale(1.12);
+        opacity: 1;
+      }
+    }
+
+    &:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.22);
+    }
 
     .icon {
-      height: 22px;
-      width: auto;
-      opacity: 0.9;
+      height: 24px;
+      width: 24px;
+      object-fit: contain;
+      opacity: 0.92;
+      filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
       transition:
         transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
         opacity 0.2s ease;
-
-      &:hover {
-        transform: scale(1.15);
-        opacity: 1;
-      }
-      &:active {
-        transform: scale(0.95);
-      }
     }
   }
 
@@ -135,7 +154,7 @@ const overflowLinks = computed(() => {
   .overflow-wrap {
     display: inline-flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     max-width: 0;
     opacity: 0;
     overflow: hidden;
@@ -145,7 +164,7 @@ const overflowLinks = computed(() => {
       opacity 0.25s ease;
 
     &.is-open {
-      max-width: 320px;
+      max-width: 360px;
       opacity: 1;
       pointer-events: auto;
     }
@@ -162,15 +181,15 @@ const overflowLinks = computed(() => {
 
   // 展开 / 收起微型按钮
   .toggle-btn {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     cursor: pointer;
@@ -183,13 +202,13 @@ const overflowLinks = computed(() => {
       color 0.2s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.22);
-      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.24);
+      border-color: rgba(255, 255, 255, 0.4);
       color: #fff;
       transform: scale(1.08);
     }
     &:active {
-      transform: scale(0.94);
+      transform: scale(0.92);
     }
 
     .arrow-icon {
@@ -204,36 +223,58 @@ const overflowLinks = computed(() => {
   @media (max-width: $bp-md) {
     .link-list,
     .overflow-wrap {
-      gap: 12px;
+      gap: 8px;
     }
 
-    .social-item .icon {
-      height: 20px;
+    .social-item {
+      width: 38px;
+      height: 38px;
+
+      .icon {
+        height: 23px;
+        width: 23px;
+      }
     }
 
     .toggle-btn {
-      width: 22px;
-      height: 22px;
+      width: 28px;
+      height: 28px;
     }
   }
 
   @media (max-width: $bp-sm) {
     .link-list,
     .overflow-wrap {
-      gap: 10px; // 移动端保证舒适间隙，不再紧贴
+      gap: 8px; // 38px 触控盒 + 8px 间隙 = 46px 间距，彻底消除误触
     }
 
-    .social-item .icon {
-      height: 19px;
+    .social-item {
+      width: 38px;
+      height: 38px;
+      background: rgba(255, 255, 255, 0.07); // 轻量微光背景，界定触控边界
+
+      &:hover {
+        transform: none;
+      }
+
+      &:active {
+        background: rgba(255, 255, 255, 0.22);
+        transform: scale(0.9);
+      }
+
+      .icon {
+        height: 22px;
+        width: 22px;
+      }
     }
 
     .toggle-btn {
-      width: 20px;
-      height: 20px;
+      width: 28px;
+      height: 28px;
 
       .arrow-icon {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
       }
     }
   }

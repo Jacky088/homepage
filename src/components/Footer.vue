@@ -10,11 +10,10 @@
       />
     </div>
 
-    <!-- 歌词展示（播放且开启歌词时，不要动歌词显示） -->
+    <!-- 歌词展示（播放且开启歌词时展示） -->
     <div v-if="store.playerState && store.playerLrcShow" class="lrc">
       <div class="lrc-all" :key="store.getPlayerLrc">
         <music-one theme="filled" size="18" fill="#efefef" />
-        <!-- 歌词超宽时自动跑马灯，速度按歌词时长/文本长度动态计算 -->
         <span class="lrc-clip">
           <span
             ref="lrcTextRef"
@@ -35,15 +34,15 @@
         ref="powerRef"
       >
         <div class="power">
-          <span>
+          <span class="power-text">
             <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
-            &copy;
+            <span class="copyright-symbol">&copy;</span>
             <span v-if="startYear < fullYear" class="site-start">
               {{ startYear }}
-              -
+              <span class="dash">-</span>
             </span>
-            {{ fullYear }}
-            <a :href="siteUrl" target="_blank" rel="noopener noreferrer">{{ siteAuthor }}</a>
+            <span class="site-end">{{ fullYear }}</span>
+            <a :href="siteUrl" target="_blank" rel="noopener noreferrer" class="site-author">{{ siteAuthor }}</a>
           </span>
           <!-- 站点备案 -->
           <span v-if="siteIcp" class="site-icp">
@@ -88,37 +87,30 @@ const computeOverflow = () => {
   const isMobile = screenW <= 480;
   const isTablet = screenW <= 720 && screenW > 480;
 
-  const iconSize = isMobile ? 19 : isTablet ? 20 : 22;
-  const gap = isMobile ? 10 : isTablet ? 12 : 14;
-  const leftMargin = isMobile ? 12 : isTablet ? 16 : 24;
-  const rightMargin = isMobile ? 12 : isTablet ? 16 : 24;
-  const btnWidth = isMobile ? 20 : isTablet ? 22 : 24;
-  const safeBuffer = isMobile ? 20 : 32;
+  const itemSize = isMobile ? 38 : isTablet ? 38 : 40;
+  const gap = isMobile ? 8 : isTablet ? 8 : 10;
+  const leftMargin = isMobile ? 12 : isTablet ? 16 : 20;
+  const rightMargin = isMobile ? 14 : isTablet ? 16 : 22;
+  const btnWidth = isMobile ? 28 : isTablet ? 28 : 30;
+  const safeBuffer = isMobile ? 16 : 24;
 
   const totalCount = socialLinks.length;
-  // 全部展开时社交区域的总占用宽度
-  const fullSocialW = totalCount * iconSize + (totalCount - 1) * gap;
+  const fullSocialW = totalCount * itemSize + (totalCount - 1) * gap;
 
-  // 测量或估算版权文字宽度
-  let powerW = isMobile ? 110 : isTablet ? 150 : 220;
+  let powerW = isMobile ? 130 : isTablet ? 160 : 220;
   if (powerRef.value) {
     powerW = powerRef.value.offsetWidth;
   }
 
-  // 总所需空间 = 左外边距 + 社交宽度 + 安全间距 + 版权宽度 + 右外边距
   const totalNeeded = leftMargin + fullSocialW + safeBuffer + powerW + rightMargin;
 
   if (totalNeeded > footerW && totalCount > 2) {
-    // 发生重叠，开启折叠模式
     isSocialOverflow.value = true;
-    // 计算留给折叠后社交图标的可用宽度
     const availableForIcons =
       footerW - rightMargin - powerW - safeBuffer - leftMargin - btnWidth - gap;
-    const fitCount = Math.floor((availableForIcons + gap) / (iconSize + gap));
-    // 至少展示 2 个（或 1 个极端小屏），最多展示 3 个常驻
+    const fitCount = Math.floor((availableForIcons + gap) / (itemSize + gap));
     visibleSocialCount.value = Math.max(1, Math.min(3, fitCount || 2));
   } else {
-    // 空间足够，无需折叠
     isSocialOverflow.value = false;
     visibleSocialCount.value = totalCount;
     isSocialExpanded.value = false;
@@ -135,88 +127,91 @@ const handleClickOutside = (e) => {
   }
 };
 
-// 加载配置数据
-// const siteStartDate = ref(import.meta.env.VITE_SITE_START);
 const startYear = ref(
-  import.meta.env.VITE_SITE_START?.length >= 4 ?
-  import.meta.env.VITE_SITE_START.substring(0, 4) : null
+  import.meta.env.VITE_SITE_START?.length >= 4
+    ? import.meta.env.VITE_SITE_START.substring(0, 4)
+    : null
 );
 const siteIcp = ref(import.meta.env.VITE_SITE_ICP);
 const siteAuthor = ref(import.meta.env.VITE_SITE_AUTHOR);
 const siteUrl = computed(() => {
   const url = import.meta.env.VITE_SITE_URL;
   if (!url) return "https://example.com";
-  // 判断协议前缀
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     return "//" + url;
   }
   return url;
 });
 
-// ---------- 歌词跑马灯 ----------
+// 歌词跑马灯计算
 const lrcTextRef = ref(null);
 const isMarquee = ref(false);
-const marqueeDuration = ref(12); // 单程滚动秒数
-const marqueeDistance = ref(0); // 滚动距离 px
+const marqueeDuration = ref("12s");
+const marqueeDistance = ref("0px");
 
-// 测量当前歌词是否超宽，超宽则激活跑马灯并按内容长度计算速度
-const measureMarquee = async () => {
-  const target = store.getPlayerLrc;
-  // 歌词切换时新元素由 :key 重建，等待文本真正更新后再测量，
-  // 避免测量到尚未替换的旧歌词宽度
-  for (let i = 0; i < 20; i++) {
-    await nextTick();
+const marqueeStyle = computed(() => ({
+  "--marquee-duration": marqueeDuration.value,
+  "--marquee-distance": marqueeDistance.value,
+}));
+
+const computeMarquee = () => {
+  nextTick(() => {
     const el = lrcTextRef.value;
-    if (el && el.textContent === target) break;
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  const el = lrcTextRef.value;
-  if (!el) return;
-  const clip = el.parentElement;
-  // width:max-content 下边界矩形宽度即内容自然宽度
-  const overflow = Math.ceil(el.getBoundingClientRect().width - clip.clientWidth);
-  if (overflow > 4) {
-    isMarquee.value = true;
-    marqueeDistance.value = overflow;
-    // 速度按本句歌词停留时长自适应：总行程（溢出 + 可视宽）在句尾前刚好滚完；
-    // 停留时长未知时退回 60px/s 基准。上限防极短句滚太快，下限保证可读性
-    const stay = store.playerLrcDuration;
-    const travel = overflow + clip.clientWidth;
-    if (stay > 1) {
-      marqueeDuration.value = Math.min(45, Math.max(5, stay));
-    } else {
-      marqueeDuration.value = Math.min(20, Math.max(6, travel / 60));
+    if (!el) {
+      isMarquee.value = false;
+      return;
     }
-  } else {
+    const container = el.parentElement;
+    if (!container) return;
+
+    const textWidth = el.scrollWidth;
+    const containerWidth = container.clientWidth;
+
+    if (textWidth > containerWidth && containerWidth > 0) {
+      const distance = textWidth - containerWidth;
+      const speed = 30;
+      const duration = Math.max(distance / speed, 3);
+      marqueeDistance.value = `-${distance}px`;
+      marqueeDuration.value = `${duration.toFixed(2)}s`;
+      isMarquee.value = true;
+    } else {
+      isMarquee.value = false;
+      marqueeDistance.value = "0px";
+    }
+  });
+};
+
+watch(
+  () => store.getPlayerLrc,
+  () => {
     isMarquee.value = false;
+    computeMarquee();
   }
-};
+);
 
-// 歌词变化时重新测量
-watch(() => store.getPlayerLrc, measureMarquee, { immediate: true });
-
-// 窗口尺寸变化（旋转屏幕 / 拖动窗口）时重新测量
-let resizeTimer = null;
-const onResize = () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    measureMarquee();
-    computeOverflow();
-  }, 100);
-};
+watch(
+  () => store.playerLrcShow,
+  (val) => {
+    if (val) computeMarquee();
+  }
+);
 
 let footerObserver = null;
 
+const onResize = () => {
+  computeOverflow();
+  computeMarquee();
+};
+
 onMounted(() => {
+  computeOverflow();
   window.addEventListener("resize", onResize);
   document.addEventListener("click", handleClickOutside);
-  computeOverflow();
-  nextTick(() => {
-    computeOverflow();
-  });
+
   if (footerRef.value && "ResizeObserver" in window) {
     footerObserver = new ResizeObserver(() => {
       computeOverflow();
+      computeMarquee();
     });
     footerObserver.observe(footerRef.value);
   }
@@ -225,16 +220,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize);
   document.removeEventListener("click", handleClickOutside);
-  clearTimeout(resizeTimer);
   if (footerObserver) footerObserver.disconnect();
-});
-
-const marqueeStyle = computed(() => {
-  if (!isMarquee.value) return {};
-  return {
-    "--marquee-distance": `-${marqueeDistance.value}px`,
-    "--marquee-duration": `${marqueeDuration.value}s`,
-  };
 });
 </script>
 
@@ -242,21 +228,22 @@ const marqueeStyle = computed(() => {
 #footer {
   position: relative;
   width: 100%;
-  height: 46px;
-  line-height: 46px;
+  height: 48px;
+  line-height: 48px;
   text-align: center;
   z-index: 0;
-  font-size: 14px;
   box-sizing: border-box;
-  // 文字不换行
   word-break: keep-all;
   white-space: nowrap;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 
   .footer-left {
     position: absolute;
     left: 20px;
     top: 0;
-    height: 100%;
+    bottom: 0;
+    margin: auto 0;
+    height: 38px;
     display: flex;
     align-items: center;
     z-index: 2;
@@ -264,9 +251,11 @@ const marqueeStyle = computed(() => {
 
   .footer-right {
     position: absolute;
-    right: 24px;
+    right: 22px;
     top: 0;
-    height: 100%;
+    bottom: 0;
+    margin: auto 0;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -275,8 +264,74 @@ const marqueeStyle = computed(() => {
   }
 
   .power {
+    display: inline-flex;
+    align-items: center;
+    font-family: "HarmonyOS_Regular", -apple-system, sans-serif;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.78);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    line-height: 1.2;
+    letter-spacing: 0.25px;
     animation: fade 0.3s;
+
+    .power-text {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .copyright-symbol {
+      margin: 0 3px 0 1px;
+      opacity: 0.9;
+    }
+
+    .site-start {
+      display: inline-flex;
+      align-items: center;
+      .dash {
+        margin: 0 3px;
+        opacity: 0.6;
+      }
+    }
+
+    .site-end {
+      margin-right: 4px;
+    }
+
+    .site-author {
+      color: rgba(255, 255, 255, 0.95);
+      font-weight: 500;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.2s, background-color 0.2s, text-shadow 0.2s;
+
+      &:hover {
+        color: #fff;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+
+      &:active {
+        opacity: 0.8;
+      }
+    }
   }
+
+  .site-icp {
+    margin-left: 6px;
+    font-size: 0.84rem;
+    color: rgba(255, 255, 255, 0.6);
+
+    a {
+      color: rgba(255, 255, 255, 0.75);
+      transition: color 0.2s;
+      &:hover {
+        color: #fff;
+        text-decoration: underline;
+      }
+    }
+  }
+
   .lrc-all {
     animation: fade 0.3s;
   }
@@ -289,49 +344,47 @@ const marqueeStyle = computed(() => {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-      .lrc-all {
-        width: 98%;
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        .i-icon {
-          width: 18px;
-          height: 18px;
-          display: inherit;
-          flex-shrink: 0;
-        }
-      }
-      // 歌词裁剪区：溢出隐藏，超宽时交给内部跑马灯
-      .lrc-clip {
-        flex: 0 1 auto;
-        min-width: 0;
-        overflow: hidden;
-        margin: 0 8px;
-      }
-      .lrc-text {
-        display: inline-block;
-        white-space: nowrap;
-        // 强制取内容自然宽度：否则 CJK 字符作为合法断点会把 inline-block
-        // 压缩到容器宽度（min-content 缩水），导致永远测不出溢出
-        width: max-content;
-        max-width: none;
 
-        // 超宽歌词：单程滚动，滚到末端停住不回滚（forwards 保持终点位置）
-        &.marquee {
-          animation: lrc-marquee var(--marquee-duration, 12s) linear forwards;
-        }
+    .lrc-all {
+      width: 98%;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      .i-icon {
+        width: 18px;
+        height: 18px;
+        display: inherit;
+        flex-shrink: 0;
       }
+    }
+
+    .lrc-clip {
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      margin: 0 8px;
+    }
+
+    .lrc-text {
+      display: inline-block;
+      white-space: nowrap;
+      width: max-content;
+      max-width: none;
+
+      &.marquee {
+        animation: lrc-marquee var(--marquee-duration, 12s) linear forwards;
+      }
+    }
   }
+
   &.blur {
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.45) 100%);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    font-size: 15px;
   }
 
-  // 歌词跑马灯：单程从起点滚到 -distance，forwards 停在末端
   @keyframes lrc-marquee {
     from {
       transform: translateX(0);
@@ -342,24 +395,23 @@ const marqueeStyle = computed(() => {
   }
 
   @media (max-width: $bp-md) {
-    height: 44px;
-    line-height: 44px;
-    font-size: 0.82rem;
+    height: 48px;
+    line-height: 48px;
 
     .footer-left {
       left: 14px;
     }
 
     .footer-right {
-      right: 14px;
+      right: 16px;
+    }
+
+    .power {
+      font-size: 0.84rem;
     }
 
     .lrc {
       padding: 0 110px;
-    }
-
-    &.blur {
-      font-size: 0.82rem;
     }
   }
 
@@ -370,16 +422,24 @@ const marqueeStyle = computed(() => {
   }
 
   @media (max-width: $bp-sm) {
-    height: 40px;
-    line-height: 40px;
-    font-size: 0.74rem;
+    height: 48px;
+    line-height: 48px;
 
     .footer-left {
-      left: 10px;
+      left: 12px;
     }
 
     .footer-right {
-      right: 10px;
+      right: 14px;
+    }
+
+    .power {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.82);
+
+      .site-author {
+        padding: 2px 2px;
+      }
     }
 
     .site-icp {
@@ -395,7 +455,7 @@ const marqueeStyle = computed(() => {
     }
 
     &.blur {
-      font-size: 0.74rem;
+      font-size: 0.82rem;
     }
   }
 }
