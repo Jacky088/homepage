@@ -1,60 +1,68 @@
 <template>
-  <footer id="footer" ref="footerRef" :class="store.footerBlur ? 'blur' : null">
-    <!-- 左侧社交链接 -->
-    <div class="footer-left">
-      <SocialLinks
-        :is-overflow="isSocialOverflow"
-        :is-expanded="isSocialExpanded"
-        :visible-count="visibleSocialCount"
-        @toggle-expand="toggleSocialExpand"
-      />
-    </div>
-
-    <!-- 歌词展示（播放且开启歌词时展示） -->
-    <div v-if="store.playerState && store.playerLrcShow" class="lrc">
-      <div class="lrc-all" :key="store.getPlayerLrc">
-        <music-one theme="filled" size="18" fill="#efefef" />
-        <span class="lrc-clip">
-          <span
-            ref="lrcTextRef"
-            class="lrc-text"
-            :class="{ marquee: isMarquee }"
-            :style="marqueeStyle"
-          >{{ store.getPlayerLrc }}</span>
-        </span>
-        <music-one theme="filled" size="18" fill="#efefef" />
-      </div>
-    </div>
-
-    <!-- 右侧版权与备案（未开启歌词且社交未展开时展示） -->
-    <Transition name="fade">
+  <div class="footer-wrap">
+    <!-- 1. 独立悬浮歌词行（移出页脚，往上移动一行，居中展示） -->
+    <Transition name="lrc-fade">
       <div
-        v-if="(!store.playerState || !store.playerLrcShow) && !isSocialExpanded"
-        class="footer-right"
-        ref="powerRef"
+        v-if="store.playerState && store.playerLrcShow && store.getPlayerLrc"
+        class="lrc-float-row"
       >
-        <div class="power">
-          <span class="power-text">
-            <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
-            <span class="copyright-symbol">&copy;</span>
-            <span v-if="startYear < fullYear" class="site-start">
-              {{ startYear }}
-              <span class="dash">-</span>
-            </span>
-            <span class="site-end">{{ fullYear }}</span>
-            <a :href="siteUrl" target="_blank" rel="noopener noreferrer" class="site-author">{{ siteAuthor }}</a>
+        <div class="lrc-all" :key="store.getPlayerLrc">
+          <music-one theme="filled" size="15" fill="#ffffffd0" class="lrc-icon" />
+          <span class="lrc-clip">
+            <span
+              ref="lrcTextRef"
+              class="lrc-text"
+              :class="{ marquee: isMarquee }"
+              :style="marqueeStyle"
+            >{{ store.getPlayerLrc }}</span>
           </span>
-          <!-- 站点备案 -->
-          <span v-if="siteIcp" class="site-icp">
-            &amp;
-            <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
-              {{ siteIcp }}
-            </a>
-          </span>
+          <music-one theme="filled" size="15" fill="#ffffffd0" class="lrc-icon" />
         </div>
       </div>
     </Transition>
-  </footer>
+
+    <!-- 2. 底栏页脚（左侧社交，右侧版权，常驻展示不被歌词替换） -->
+    <footer id="footer" ref="footerRef" :class="store.footerBlur ? 'blur' : null">
+      <!-- 左侧社交链接 -->
+      <div class="footer-left">
+        <SocialLinks
+          :is-overflow="isSocialOverflow"
+          :is-expanded="isSocialExpanded"
+          :visible-count="visibleSocialCount"
+          @toggle-expand="toggleSocialExpand"
+        />
+      </div>
+
+      <!-- 右侧版权与备案（常驻展示，仅当社交图标横向展开遮挡时才淡出） -->
+      <Transition name="fade">
+        <div
+          v-if="!isSocialExpanded"
+          class="footer-right"
+          ref="powerRef"
+        >
+          <div class="power">
+            <span class="power-text">
+              <span :class="startYear < fullYear ? 'c-hidden' : 'hidden'">Copyright&nbsp;</span>
+              <span class="copyright-symbol">&copy;</span>
+              <span v-if="startYear < fullYear" class="site-start">
+                {{ startYear }}
+                <span class="dash">-</span>
+              </span>
+              <span class="site-end">{{ fullYear }}</span>
+              <a :href="siteUrl" target="_blank" rel="noopener noreferrer" class="site-author">{{ siteAuthor }}</a>
+            </span>
+            <!-- 站点备案 -->
+            <span v-if="siteIcp" class="site-icp">
+              &amp;
+              <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
+                {{ siteIcp }}
+              </a>
+            </span>
+          </div>
+        </div>
+      </Transition>
+    </footer>
+  </div>
 </template>
 
 <script setup>
@@ -87,7 +95,7 @@ const computeOverflow = () => {
   const isMobile = screenW <= 480;
   const isTablet = screenW <= 720 && screenW > 480;
 
-  const itemSize = isMobile ? 38 : isTablet ? 38 : 40;
+  const itemSize = isMobile ? 36 : isTablet ? 36 : 38;
   const gap = isMobile ? 8 : isTablet ? 8 : 10;
   const leftMargin = isMobile ? 12 : isTablet ? 16 : 20;
   const rightMargin = isMobile ? 14 : isTablet ? 16 : 22;
@@ -196,6 +204,13 @@ watch(
   }
 );
 
+watch(
+  () => store.playerState,
+  (val) => {
+    if (val && store.playerLrcShow) computeMarquee();
+  }
+);
+
 let footerObserver = null;
 
 const onResize = () => {
@@ -225,6 +240,139 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+.footer-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+}
+
+// 独立悬浮歌词行（脱离页脚容器，往上移动一行，居中浮动）
+.lrc-float-row {
+  position: absolute;
+  bottom: calc(100% + 10px); // 位于页脚上方一行，留出 10px 间距
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  z-index: 5;
+  pointer-events: auto;
+
+  .lrc-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    padding: 5px 16px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    font-family: "HarmonyOS_Regular", -apple-system, sans-serif;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    letter-spacing: 0.3px;
+    user-select: none;
+    box-sizing: border-box;
+    transition: background-color 0.2s, transform 0.2s;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .lrc-icon {
+      flex-shrink: 0;
+      opacity: 0.9;
+      animation: music-note-beat 1.8s ease-in-out infinite;
+    }
+
+    .lrc-clip {
+      flex: 0 1 auto;
+      max-width: 520px;
+      overflow: hidden;
+      margin: 0 10px;
+      white-space: nowrap;
+    }
+
+    .lrc-text {
+      display: inline-block;
+      white-space: nowrap;
+      width: max-content;
+      max-width: none;
+
+      &.marquee {
+        animation: lrc-marquee var(--marquee-duration, 12s) linear forwards;
+      }
+    }
+  }
+
+  @media (max-width: $bp-md) {
+    bottom: calc(100% + 8px);
+    max-width: calc(100vw - 32px);
+
+    .lrc-all {
+      padding: 4px 12px;
+      font-size: 0.84rem;
+
+      .lrc-clip {
+        max-width: 340px;
+        margin: 0 8px;
+      }
+    }
+  }
+
+  @media (max-width: $bp-sm) {
+    bottom: calc(100% + 8px);
+    max-width: calc(100vw - 24px);
+
+    .lrc-all {
+      padding: 4px 11px;
+      font-size: 0.81rem;
+      border-radius: 16px;
+
+      .lrc-clip {
+        max-width: 240px;
+        margin: 0 6px;
+      }
+    }
+  }
+}
+
+// 歌词浮动行动画（平滑向上滑入与淡出）
+.lrc-fade-enter-active,
+.lrc-fade-leave-active {
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lrc-fade-enter-from,
+.lrc-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 8px);
+}
+
+// 音乐图标呼吸动效
+@keyframes music-note-beat {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+// 底栏容器
 #footer {
   position: relative;
   width: 100%;
@@ -332,52 +480,6 @@ onBeforeUnmount(() => {
     }
   }
 
-  .lrc-all {
-    animation: fade 0.3s;
-  }
-  .lrc {
-    width: 100%;
-    height: 100%;
-    padding: 0 180px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-
-    .lrc-all {
-      width: 98%;
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
-      .i-icon {
-        width: 18px;
-        height: 18px;
-        display: inherit;
-        flex-shrink: 0;
-      }
-    }
-
-    .lrc-clip {
-      flex: 0 1 auto;
-      min-width: 0;
-      overflow: hidden;
-      margin: 0 8px;
-    }
-
-    .lrc-text {
-      display: inline-block;
-      white-space: nowrap;
-      width: max-content;
-      max-width: none;
-
-      &.marquee {
-        animation: lrc-marquee var(--marquee-duration, 12s) linear forwards;
-      }
-    }
-  }
-
   &.blur {
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
@@ -408,10 +510,6 @@ onBeforeUnmount(() => {
 
     .power {
       font-size: 0.84rem;
-    }
-
-    .lrc {
-      padding: 0 110px;
     }
   }
 
@@ -448,10 +546,6 @@ onBeforeUnmount(() => {
 
     .hidden {
       display: none;
-    }
-
-    .lrc {
-      padding: 0 84px;
     }
 
     &.blur {
