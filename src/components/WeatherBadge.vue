@@ -9,23 +9,23 @@
   >
     <!-- 加载中 -->
     <span v-if="loading" class="badge-loading">定位中…</span>
-    <!-- 天气数据 -->
+    <!-- 天气数据（城市、天气、温度同等间隙排列，超宽时自动跑马灯） -->
     <template v-else-if="weather.city && weather.temperature !== null">
       <WeatherIcon :name="weather.weather" :size="16" class="badge-icon-svg" />
-      <!-- 可滚动文字区（城市 + 天气），过长时跑马灯 -->
-      <span class="badge-text-wrap" ref="textWrapRef">
-        <span class="badge-text" :class="{ 'is-marquee': needScroll }">
-          <span class="badge-text-inner">
+      <span class="badge-content-wrap" ref="contentWrapRef">
+        <span class="badge-content" :class="{ 'is-marquee': needScroll }">
+          <span class="badge-content-inner">
             <span class="badge-city">{{ weather.city }}</span>
             <span class="badge-weather">{{ weather.weather }}</span>
+            <span class="badge-temp">{{ weather.temperature }}℃</span>
           </span>
-          <span class="badge-text-inner clone" aria-hidden="true" v-if="needScroll">
+          <span class="badge-content-inner clone" aria-hidden="true" v-if="needScroll">
             <span class="badge-city">{{ weather.city }}</span>
             <span class="badge-weather">{{ weather.weather }}</span>
+            <span class="badge-temp">{{ weather.temperature }}℃</span>
           </span>
         </span>
       </span>
-      <span class="badge-temp">{{ weather.temperature }}℃</span>
     </template>
     <!-- 获取失败 -->
     <span v-else class="badge-error" @click.stop="loadWeather(true)">天气获取失败</span>
@@ -49,7 +49,19 @@
               aria-label="关闭天气详情"
               @click="closePanel"
             >
-              <close-one theme="filled" size="18" fill="#ffffffb0" />
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                fill="none"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
 
@@ -85,7 +97,7 @@
                 class="forecast-card"
                 :class="{ 'is-today': index === 0 }"
               >
-                <!-- 日期 -->
+                <!-- 日期：充足宽度，防止与天气重叠 -->
                 <div class="date-col">
                   <span class="day-name">{{ item.dayName }}</span>
                   <span class="date-detail">{{ item.weekday }} {{ item.date }}</span>
@@ -130,7 +142,6 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
-import { CloseOne } from "@icon-park/vue-next";
 import WeatherIcon from "@/components/WeatherIcon.vue";
 import { getUapiWeather, getAdcode, getWeather, getCityByIp, getOtherWeather } from "@/api";
 import { showMessage } from "@/utils/message.js";
@@ -149,7 +160,7 @@ const mainKey = import.meta.env.VITE_WEATHER_KEY;
 const loading = ref(true);
 const panelShow = ref(false);
 const needScroll = ref(false);
-const textWrapRef = ref(null);
+const contentWrapRef = ref(null);
 const badgeStyle = ref({});
 const forecastList = ref([]); // 最近三天预报列表
 
@@ -247,12 +258,12 @@ const generateFallbackForecast = (currentWeather, currentTemp) => {
   });
 };
 
-// 检测文字是否需要滚动
+// 检测文字是否需要滚动（自动判断城市、天气、温度总长度是否超出可用空间）
 const checkNeedScroll = () => {
   nextTick(() => {
-    const wrap = textWrapRef.value;
+    const wrap = contentWrapRef.value;
     if (!wrap) return;
-    const inner = wrap.querySelector(".badge-text-inner");
+    const inner = wrap.querySelector(".badge-content-inner");
     if (!inner) return;
     needScroll.value = inner.scrollWidth > wrap.clientWidth;
   });
@@ -454,10 +465,9 @@ onBeforeUnmount(() => {
 .weather-badge {
   position: relative;
   display: inline-flex;
-  justify-content: space-between;
-  min-width: 160px;
   align-items: center;
   gap: 6px;
+  min-width: 150px;
   height: 38px;
   padding: 0 14px;
   border-radius: 19px;
@@ -488,19 +498,18 @@ onBeforeUnmount(() => {
   }
 
   // 文字滚动容器：限制最大宽度
-  .badge-text-wrap {
+  .badge-content-wrap {
     display: block;
-    max-width: 140px;
+    max-width: 160px;
     overflow: hidden;
     white-space: nowrap;
     flex-shrink: 1;
     transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .badge-text {
+  .badge-content {
     display: inline-flex;
     white-space: nowrap;
-    opacity: 1;
 
     &.is-marquee {
       display: flex;
@@ -510,10 +519,12 @@ onBeforeUnmount(() => {
       animation-play-state: paused;
     }
 
-    .badge-text-inner {
+    .badge-content-inner {
       display: inline-flex;
       align-items: center;
+      gap: 5px; // 城市、天气、温度间距完全一致！
       flex-shrink: 0;
+
       &.clone {
         padding-left: 1.5em;
       }
@@ -531,21 +542,7 @@ onBeforeUnmount(() => {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
     line-height: 1.2;
     letter-spacing: 0.2px;
-  }
-
-  .badge-city {
-    margin-right: 4px;
-  }
-
-  .badge-weather {
-    margin-right: 0;
-  }
-
-  .badge-temp {
-    margin-left: auto;
-    padding-left: 6px;
-    flex-shrink: 0;
-    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .badge-loading {
@@ -561,7 +558,8 @@ onBeforeUnmount(() => {
   @media (max-width: $bp-md) {
     // 移动端/小窗口副标题模式：
     // 1. 去除胶囊底色、边框与投影
-    // 2. 宽度严格等于 --logo-full-width，确保左侧与 Logo 图标左对齐，右侧与网址右对齐
+    // 2. 宽度自然随内容展开，上限由 --logo-full-width 严格约束
+    // 3. 城市、天气、温度保持同等 5px 间隙紧凑展示，超长时由内部自动跑马灯滚动
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -569,7 +567,8 @@ onBeforeUnmount(() => {
     box-shadow: none !important;
     height: auto !important;
     min-height: 0 !important;
-    width: var(--logo-full-width, auto) !important;
+    min-width: 0 !important;
+    width: auto !important;
     max-width: var(--logo-full-width, 100%) !important;
     box-sizing: border-box !important;
     display: inline-flex !important;
@@ -595,14 +594,16 @@ onBeforeUnmount(() => {
       flex-shrink: 0;
     }
 
-    .badge-text-wrap {
-      flex: 1 1 auto;
-      min-width: 0;
+    .badge-content-wrap {
+      max-width: 100%;
       overflow: hidden;
       white-space: nowrap;
     }
 
-    // 字体样式与属性严格统一
+    .badge-content-inner {
+      gap: 5px; // 保持 5px 均匀呼吸间距，杜绝温度被甩开的巨大间隙
+    }
+
     .badge-city,
     .badge-weather,
     .badge-temp {
@@ -610,18 +611,8 @@ onBeforeUnmount(() => {
       font-weight: 500;
       color: rgba(255, 255, 255, 0.95);
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
-    }
-
-    .badge-city {
-      margin-right: 4px;
-    }
-
-    .badge-temp {
-      margin-left: auto !important;
-      padding-left: 6px;
-      text-align: right;
-      flex-shrink: 0;
-      white-space: nowrap;
+      margin: 0 !important;
+      padding: 0 !important;
     }
   }
 }
@@ -707,6 +698,7 @@ onBeforeUnmount(() => {
       }
     }
 
+    // 关闭按钮：纯矢量 X 符号居中对齐圆心，彻底消除偏心双重圆
     .weather-close {
       display: inline-flex;
       align-items: center;
@@ -715,17 +707,27 @@ onBeforeUnmount(() => {
       height: 30px;
       padding: 0;
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 50%;
       cursor: pointer;
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 0;
+      outline: none;
+      box-sizing: border-box;
       transition:
         background-color 0.2s,
         transform 0.2s,
         color 0.2s;
 
+      svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+        margin: auto;
+      }
+
       &:hover {
-        background: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.2);
         color: #fff;
         transform: scale(1.06);
       }
@@ -830,10 +832,12 @@ onBeforeUnmount(() => {
           }
         }
 
+        // 日期列：充裕宽度（96px），避免任何与天气状况的文本重叠
         .date-col {
           display: flex;
           flex-direction: column;
-          width: 72px;
+          width: 96px;
+          min-width: 96px;
           flex-shrink: 0;
 
           .day-name {
@@ -853,9 +857,9 @@ onBeforeUnmount(() => {
           display: flex;
           align-items: center;
           gap: 8px;
-          flex: 1;
+          flex: 1 1 auto;
           min-width: 0;
-          padding: 0 10px;
+          padding: 0 8px;
 
           .forecast-icon {
             color: rgba(255, 255, 255, 0.95);
@@ -979,18 +983,19 @@ onBeforeUnmount(() => {
         padding: 7px 10px;
 
         .date-col {
-          width: 58px;
+          width: 88px;
+          min-width: 88px;
           .day-name {
             font-size: 0.84rem;
           }
           .date-detail {
-            font-size: 0.66rem;
+            font-size: 0.68rem;
           }
         }
 
         .weather-col {
-          padding: 0 6px;
-          gap: 5px;
+          padding: 0 4px;
+          gap: 6px;
           .desc {
             font-size: 0.82rem;
           }

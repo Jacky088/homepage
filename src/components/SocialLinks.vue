@@ -108,34 +108,37 @@ const overflowLinks = computed(() => {
     gap: 10px; // 舒适呼吸间距
   }
 
-  // 社交图标触控按钮（规范的触控热区与触摸视觉反馈）
+  // 社交图标触控按钮（去除外围包裹背景，保持舒适触控区域与无误触间距）
   .social-item {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
     line-height: 1;
     flex-shrink: 0;
-    background: transparent;
-    transition:
-      background-color 0.2s ease,
-      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    background: transparent !important;
+    border: none !important;
+    outline: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.14);
+      background: transparent !important;
       transform: translateY(-2px);
 
       .icon {
-        transform: scale(1.12);
+        transform: scale(1.15);
         opacity: 1;
       }
     }
 
     &:active {
+      background: transparent !important;
       transform: scale(0.92);
-      background: rgba(255, 255, 255, 0.22);
+
+      .icon {
+        opacity: 0.75;
+      }
     }
 
     .icon {
@@ -227,8 +230,8 @@ const overflowLinks = computed(() => {
     }
 
     .social-item {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
 
       .icon {
         height: 23px;
@@ -245,21 +248,21 @@ const overflowLinks = computed(() => {
   @media (max-width: $bp-sm) {
     .link-list,
     .overflow-wrap {
-      gap: 8px; // 38px 触控盒 + 8px 间隙 = 46px 间距，彻底消除误触
+      gap: 8px;
     }
 
     .social-item {
-      width: 38px;
-      height: 38px;
-      background: rgba(255, 255, 255, 0.07); // 轻量微光背景，界定触控边界
+      width: 36px;
+      height: 36px;
+      background: transparent !important; // 移动端彻底去除包裹的圆形背景
 
       &:hover {
         transform: none;
       }
 
       &:active {
-        background: rgba(255, 255, 255, 0.22);
-        transform: scale(0.9);
+        background: transparent !important;
+        transform: scale(0.92);
       }
 
       .icon {
