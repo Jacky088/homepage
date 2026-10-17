@@ -66,7 +66,7 @@ const getClientIp = (request) => {
   return /^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(first) ? first.split(":")[0] : first;
 };
 
-/** 用访客 IP 反查中文城市名：region 形如「中国 江苏 南京」，取最后一段 */
+/** 用访客 IP 反查城市名：国内形如「中国 江苏 南京」，境外形如「德国 Hesse Frankfurt am Main」 */
 const resolveCityByIp = async (ip, apiKey) => {
   if (!ip) return "";
   const result = await fetchUpstream(
@@ -78,9 +78,29 @@ const resolveCityByIp = async (ip, apiKey) => {
     const region = JSON.parse(result.text).region;
     if (typeof region !== "string" || !region.trim()) return "";
     const parts = region.trim().split(/\s+/);
+    // 纯国家名（如单一“德国”或“美国”无具体城市）：返回空，避免传给天气接口导致跨国同名小镇误匹配
+    if (parts.length <= 1) return "";
+    // 境外 IP：若格式为 [国家, 州, 城市...]，提取完整城市名而不是最后一个词（防止 Frankfurt am Main 被切成 Main）
+    if (parts[0] !== "中国") {
+      return parts.slice(parts.length > 2 ? 2 : 1).join(" ");
+    }
+    // 国内 IP：提取最后一段（市/区县）
     return parts[parts.length - 1] || "";
   } catch {
     return "";
+  }
+};
+
+/** 检查是否命中 uapis 上游将国家名/缩写词误匹配到海外冷门村镇的已知异常 */
+const isAnomalousWeather = (rawJsonText) => {
+  try {
+    const data = JSON.parse(rawJsonText);
+    if (!data) return false;
+    if (data.city === "德国" || data.province === "Comayagua") return true;
+    if (data.city === "Main" && data.province === "Uttar Pradesh") return true;
+    return false;
+  } catch {
+    return false;
   }
 };
 
@@ -164,9 +184,18 @@ export async function onRequest({ request, env }) {
   const ipCity = await resolveCityByIp(getClientIp(request), apiKey);
   if (ipCity) {
     const result = await requestWeather(ipCity, apiKey);
-    if (result.ok) return respond(result, PRIVATE_CACHE, matchedOrigin);
+    if (result.ok && !isAnomalousWeather(result.text)) {
+      return respond(result, PRIVATE_CACHE, matchedOrigin);
+    }
   }
 
   // 3) 兜底：仍不传城市
-  return respond(await requestWeather("", apiKey), PRIVATE_CACHE, matchedOrigin);
+  const fallback = await requestWeather("", apiKey);
+  if (fallback.ok && isAnomalousWeather(fallback.text)) {
+    return new Response(
+      JSON.stringify({ error: "LOCATION_ANOMALOUS", message: "异常匹配已拦截" }),
+      { status: 404, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } },
+    );
+  }
+  return respond(fallback, PRIVATE_CACHE, matchedOrigin);
 }

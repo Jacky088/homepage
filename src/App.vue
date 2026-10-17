@@ -427,7 +427,7 @@ onBeforeUnmount(() => {
         grid-area: weather;
         justify-self: start;
         margin-left: 0;
-        padding-left: 0; // 左边缘与 Logo 图标最左边缘严格对齐
+        padding-left: 4px; // 视觉微调：适当右移 4px，与 Logo 图标主体图形视觉对齐
         display: flex;
         align-items: center;
       }

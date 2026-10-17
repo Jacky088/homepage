@@ -12,7 +12,7 @@
     <!-- 天气数据（城市、天气、温度同等间隙排列，超宽时自动跑马灯） -->
     <template v-else-if="weather.city && weather.temperature !== null">
       <WeatherIcon :name="weather.weather" :size="16" class="badge-icon-svg" />
-      <span class="badge-content-wrap" ref="contentWrapRef">
+      <span :class="['badge-content-wrap', { 'has-overflow': needScroll }]" ref="contentWrapRef">
         <span class="badge-content" :class="{ 'is-marquee': needScroll }">
           <span class="badge-content-inner">
             <span class="badge-city">{{ weather.city }}</span>
@@ -156,6 +156,10 @@ import { mainStore } from "@/store";
 
 const store = mainStore();
 const mainKey = import.meta.env.VITE_WEATHER_KEY;
+// 默认兜底城市（可通过环境变量 VITE_WEATHER_DEFAULT_CITY 自定义，未配置时默认“北京”）
+const defaultCity = (import.meta.env.VITE_WEATHER_DEFAULT_CITY || "北京").trim();
+// 冷门境外代理机房节点黑名单（使用代理或测试时容易误分配的无意义海外节点）
+const OBSCURE_OVERSEAS_CITIES = new Set(["delhi", "durban", "main", "de", "comayagua"]);
 
 const loading = ref(true);
 const panelShow = ref(false);
@@ -258,14 +262,14 @@ const generateFallbackForecast = (currentWeather, currentTemp) => {
   });
 };
 
-// 检测文字是否需要滚动（自动判断城市、天气、温度总长度是否超出可用空间）
+// 检测文字是否需要滚动（预留 4px 容差，宁跑勿切，避免亚像素渲染偏差导致文字末尾被截断）
 const checkNeedScroll = () => {
   nextTick(() => {
     const wrap = contentWrapRef.value;
     if (!wrap) return;
     const inner = wrap.querySelector(".badge-content-inner");
     if (!inner) return;
-    needScroll.value = inner.scrollWidth > wrap.clientWidth;
+    needScroll.value = inner.scrollWidth >= (wrap.clientWidth - 4);
   });
 };
 
@@ -278,6 +282,12 @@ const updateBadgeWidth = () => {
 const loadByUapis = async () => {
   const data = await getUapiWeather();
   const city = data.city || data.province || "未知城市";
+
+  // 过滤 uapis 将国家名/缩写词误匹配到海外同名冷门小镇的已知异常（如 "德国" 误匹配洪都拉斯 Comayagua）
+  if (city === "德国" || (data.province === "Comayagua" && city === "德国") || city === "Main") {
+    throw new Error("识别到同名小镇异常定位，触发降级");
+  }
+
   const desc = normalizeWeatherZh(amapWeatherZh(data.weather));
   const currentTemp = data.temperature;
 
@@ -344,6 +354,12 @@ const loadByIp = async () => {
   const cityInfo = await getCityByIp();
   if (!cityInfo || !cityInfo.en) throw new Error("定位城市为空");
 
+  // 避免冷门境外代理机房节点（如 Delhi、Durban 等）误显示在个人主页
+  const enLower = cityInfo.en.trim().toLowerCase();
+  if (OBSCURE_OVERSEAS_CITIES.has(enLower)) {
+    throw new Error(`忽略冷门海外代理节点「${cityInfo.en}」，触发默认城市兜底`);
+  }
+
   const result = await getOtherWeather(cityInfo.en);
   if (!result || !result.current_condition || result.current_condition.length === 0) {
     throw new Error("备用天气接口返回错误");
@@ -375,6 +391,60 @@ const loadByIp = async () => {
   }
 };
 
+// 默认城市保底源（当 IP 定位失败或命中异常节点时，优雅兜底）
+const loadByDefaultCity = async () => {
+  const target = defaultCity || "北京";
+  try {
+    const data = await getUapiWeather(target);
+    const desc = normalizeWeatherZh(amapWeatherZh(data.weather));
+    weather.value = {
+      city: data.city || target,
+      weather: desc,
+      temperature: data.temperature,
+      winddirection: data.wind_direction || "未知",
+      windpower: normalizeWindPower(data.wind_power),
+      humidity: data.humidity || null,
+    };
+    try {
+      const wttrData = await getOtherWeather(data.city || target);
+      const parsed = parseWttrForecast(wttrData);
+      if (parsed.length >= 3) {
+        forecastList.value = parsed;
+        return;
+      }
+    } catch {
+      // 预报失败走兜底
+    }
+    forecastList.value = generateFallbackForecast(desc, data.temperature);
+    return;
+  } catch (err) {
+    console.warn("默认城市 uapis 查询失败，尝试 wttr.in：", err);
+  }
+
+  const result = await getOtherWeather(target);
+  if (!result || !result.current_condition || result.current_condition.length === 0) {
+    throw new Error("默认城市天气获取失败");
+  }
+  const cond = result.current_condition[0];
+  const zhValue = cond.lang_zh && cond.lang_zh[0] && cond.lang_zh[0].value;
+  const enValue = cond.weatherDesc && cond.weatherDesc[0] && cond.weatherDesc[0].value;
+  const desc = normalizeWeatherZh(zhValue || wttrWeatherZh(enValue || ""));
+  weather.value = {
+    city: target,
+    weather: desc,
+    temperature: cond.temp_C || "0",
+    winddirection: windDirZh(cond.winddir16Point) || "未知",
+    windpower: cond.windspeedKmph ? `${Math.round(Number(cond.windspeedKmph) / 5)}` : "0",
+    humidity: cond.humidity || null,
+  };
+  const parsed = parseWttrForecast(result);
+  if (parsed.length >= 3) {
+    forecastList.value = parsed;
+  } else {
+    forecastList.value = generateFallbackForecast(desc, cond.temp_C);
+  }
+};
+
 // 加载天气
 const loadWeather = async (silent) => {
   loading.value = true;
@@ -382,6 +452,7 @@ const loadWeather = async (silent) => {
     const sources = [{ name: "uapis", run: loadByUapis }];
     if (mainKey) sources.push({ name: "高德", run: loadByAmap });
     sources.push({ name: "境外 IP + wttr.in", run: loadByIp });
+    sources.push({ name: "默认保底城市", run: loadByDefaultCity });
 
     let lastError = null;
     for (const source of sources) {
@@ -432,6 +503,21 @@ const onKeydown = (e) => {
 };
 
 let logoObserver = null;
+let wrapObserver = null;
+
+// 监听文字滚动容器的 DOM 挂载与尺寸变化（联动字体渲染与视口调整）
+watch(contentWrapRef, (wrapEl) => {
+  if (wrapObserver) {
+    wrapObserver.disconnect();
+    wrapObserver = null;
+  }
+  if (wrapEl && "ResizeObserver" in window) {
+    wrapObserver = new ResizeObserver(() => {
+      checkNeedScroll();
+    });
+    wrapObserver.observe(wrapEl);
+  }
+});
 
 const onResize = () => {
   updateBadgeWidth();
@@ -443,6 +529,13 @@ onMounted(() => {
   window.addEventListener("resize", onResize);
   window.addEventListener("keydown", onKeydown);
   updateBadgeWidth();
+
+  // 联动自定义字体加载完成事件，避免字体变宽后未及时触发跑马灯导致末尾字被裁切
+  if (document.fonts) {
+    document.fonts.ready.then(() => {
+      checkNeedScroll();
+    });
+  }
 
   const logo = document.querySelector(".message .logo");
   if (logo && "ResizeObserver" in window) {
@@ -457,6 +550,10 @@ onBeforeUnmount(() => {
   if (logoObserver) {
     logoObserver.disconnect();
     logoObserver = null;
+  }
+  if (wrapObserver) {
+    wrapObserver.disconnect();
+    wrapObserver = null;
   }
 });
 </script>
@@ -505,6 +602,11 @@ onBeforeUnmount(() => {
     white-space: nowrap;
     flex-shrink: 1;
     transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &.has-overflow {
+      mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent 100%);
+    }
   }
 
   .badge-content {
@@ -545,6 +647,10 @@ onBeforeUnmount(() => {
     white-space: nowrap;
   }
 
+  .badge-city {
+    flex-shrink: 0; // 确保城市名称完整展示，避免被内部挤压
+  }
+
   .badge-loading {
     opacity: 0.8;
     font-size: 0.84rem;
@@ -569,7 +675,7 @@ onBeforeUnmount(() => {
     min-height: 0 !important;
     min-width: 0 !important;
     width: auto !important;
-    max-width: var(--logo-full-width, 100%) !important;
+    max-width: calc(var(--logo-full-width, 100%) - 4px) !important; // 右边界保持不变，扣除左侧右移的 4px
     box-sizing: border-box !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -598,6 +704,15 @@ onBeforeUnmount(() => {
       max-width: 100%;
       overflow: hidden;
       white-space: nowrap;
+
+      &.has-overflow {
+        mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent 100%);
+      }
+    }
+
+    .badge-city {
+      flex-shrink: 0;
     }
 
     .badge-content-inner {
