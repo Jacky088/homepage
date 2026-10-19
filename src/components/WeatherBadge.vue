@@ -262,14 +262,38 @@ const generateFallbackForecast = (currentWeather, currentTemp) => {
   });
 };
 
-// 检测文字是否需要滚动（预留 4px 容差，宁跑勿切，避免亚像素渲染偏差导致文字末尾被截断）
+// 检测文字是否需要滚动（依据容器最大可用空间与内容自然宽度严格判定，杜绝死循环抖动）
 const checkNeedScroll = () => {
   nextTick(() => {
     const wrap = contentWrapRef.value;
     if (!wrap) return;
     const inner = wrap.querySelector(".badge-content-inner");
     if (!inner) return;
-    needScroll.value = inner.scrollWidth >= (wrap.clientWidth - 4);
+
+    // 单段文字的自然渲染宽度
+    const contentWidth = inner.offsetWidth || inner.scrollWidth;
+
+    // 获取容器最大允许宽度（桌面端为 160px，移动端受父级胶囊及 --logo-full-width 约束）
+    const badge = wrap.closest(".weather-badge");
+    let maxAllowed = parseFloat(window.getComputedStyle(wrap).maxWidth);
+
+    if (badge) {
+      const badgeMax = parseFloat(window.getComputedStyle(badge).maxWidth);
+      if (!Number.isNaN(badgeMax) && badgeMax > 0 && badgeMax < 10000) {
+        const icon = badge.querySelector(".badge-icon-svg");
+        const iconWidth = icon ? icon.offsetWidth + 5 : 21;
+        const availableInBadge = badgeMax - iconWidth;
+        if (availableInBadge > 0) {
+          maxAllowed = Number.isNaN(maxAllowed) ? availableInBadge : Math.min(maxAllowed, availableInBadge);
+        }
+      }
+    }
+
+    if (!Number.isNaN(maxAllowed) && maxAllowed > 0 && maxAllowed < 10000) {
+      needScroll.value = contentWidth > (maxAllowed - 2);
+    } else {
+      needScroll.value = inner.scrollWidth > wrap.clientWidth;
+    }
   });
 };
 
@@ -503,21 +527,6 @@ const onKeydown = (e) => {
 };
 
 let logoObserver = null;
-let wrapObserver = null;
-
-// 监听文字滚动容器的 DOM 挂载与尺寸变化（联动字体渲染与视口调整）
-watch(contentWrapRef, (wrapEl) => {
-  if (wrapObserver) {
-    wrapObserver.disconnect();
-    wrapObserver = null;
-  }
-  if (wrapEl && "ResizeObserver" in window) {
-    wrapObserver = new ResizeObserver(() => {
-      checkNeedScroll();
-    });
-    wrapObserver.observe(wrapEl);
-  }
-});
 
 const onResize = () => {
   updateBadgeWidth();
@@ -550,10 +559,6 @@ onBeforeUnmount(() => {
   if (logoObserver) {
     logoObserver.disconnect();
     logoObserver = null;
-  }
-  if (wrapObserver) {
-    wrapObserver.disconnect();
-    wrapObserver = null;
   }
 });
 </script>
