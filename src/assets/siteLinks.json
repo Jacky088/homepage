@@ -19,16 +19,6 @@
     "name": "站点状态",
     "link": "https://stats.uptimerobot.com/skGUWMvSLy/"
   },
-     {
-    "icon": "Github",
-    "name": "Github加速",
-    "link": "https://gh-proxy.com/"
-  }, 
-    {
-    "icon": "Info",
-    "name": "IP查询",
-    "link": "https://ippure.com/"
-  }, 
   {
     "icon": "Cloud",
     "name": "文件快递柜",
