@@ -1,5 +1,5 @@
 /**
- * 音乐歌单代理（EdgeOne Pages 边缘函数）
+ * 音乐歌单代理（Cloudflare Pages / EdgeOne Pages 边缘函数）
  *
  * 路由：functions/api/song.js → /api/song
  * 与 Vercel 版（api/song.js）路径保持一致，因此前端在两个平台上都填 VITE_SONG_API=/api/song 即可。
@@ -14,7 +14,7 @@
  * 私人 Meting 接口若由前端直连，必须把域名写进 index.html 的 CSP connect-src，
  * 等于把地址提交进仓库；改成同源代理后，地址只放在服务端变量里，CSP 也不用改。
  *
- * 环境变量（EdgeOne Pages 项目设置 → 环境变量）：
+ * 环境变量（Cloudflare Pages / EdgeOne Pages 项目设置 → 环境变量）：
  *   SONG_API_UPSTREAM = 你的 Meting 接口地址（**不要**加 VITE_ 前缀，否则会被打进前端产物）
  * 可选：
  *   ALLOWED_ORIGIN = https://你的域名（限制只有自己的站点能调用，防止被他人盗刷）
@@ -94,7 +94,7 @@ export async function onRequest({ request, env }) {
     return jsonResponse(
       {
         error: "SONG_API_UPSTREAM_NOT_CONFIGURED",
-        message: "未配置环境变量 SONG_API_UPSTREAM，请在 EdgeOne Pages 项目设置中添加",
+        message: "未配置环境变量 SONG_API_UPSTREAM，请在 Cloudflare Pages / EdgeOne Pages 项目设置中添加",
       },
       502,
       corsHeaders,

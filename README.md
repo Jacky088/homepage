@@ -152,7 +152,7 @@ pnpm preview
 | --- | --- | --- |
 | 本地开发 | `.env` 中 `VITE_SONG_API_PROXY = "https://你的接口地址/api"` | `VITE_SONG_API = "/api/song"`，走 dev server 同源代理 |
 | Vercel | 环境变量 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀，它不会进前端产物） | `VITE_SONG_API = "/api/song"`，走 `api/song.js` |
-| EdgeOne Pages | 环境变量 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀） | `VITE_SONG_API = "/api/song"`，走 `functions/api/song.js` |
+| Cloudflare Pages / EdgeOne Pages | 环境变量 `SONG_API_UPSTREAM`（**不要**加 `VITE_` 前缀） | `VITE_SONG_API = "/api/song"`，走 `functions/api/song.js` |
 
 两份代理函数逻辑一致，都只转发 `server` / `type` / `id` 三个参数并做白名单校验（平台限 `netease|tencent`、类型限 `song|playlist|album|search|artist|lrc` 支持歌单与歌词、ID 限 `[A-Za-z0-9_-]{1,64}`），防止被当成开放代理去刷你的私人接口；未配置上游或上游超时会返回 5xx，由前端的降级逻辑接管，播放器不会因此报错。前端在解析接口返回时，会自动将歌词地址规范化为同源代理路径或 HTTPS，避免被浏览器 CSP 拦截或发生跨域错误。
 
@@ -185,7 +185,7 @@ pnpm preview
 | --- | --- | --- |
 | 本地开发（`pnpm dev`） | Vite dev server 代理 | `.env` 中的 `UAPI_KEY` |
 | Vercel 部署 | `api/weather.js`（Serverless Function） | 项目 Settings → Environment Variables 中的 `UAPI_KEY` |
-| EdgeOne Pages 部署 | `functions/uapi/weather.js`（边缘函数） | 项目设置 → 环境变量中的 `UAPI_KEY` |
+| Cloudflare Pages / EdgeOne Pages 部署 | `functions/uapi/weather.js`（边缘函数） | 项目设置 → 环境变量中的 `UAPI_KEY` |
 | 自有服务器 / Docker | 需自行反代 | 见下方「其他部署方式」 |
 
 `UAPI_KEY` 没有 `VITE_` 前缀，因此**不会被打进前端 JS**。
@@ -197,7 +197,7 @@ uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**
 > ⚠️ 不要改用 Vercel 的 `x-vercel-ip-city` 请求头，它给的是英文城市名，而 uapis 对英文名匹配不可靠（实测 `Wuxi` 命中「重庆巫溪县」、`Suzhou` 命中「安徽宿州市」），会静默返回**错误城市**的天气。
 
 **其他部署方式：**
-- **EdgeOne Pages**：函数源码放在 `functions/` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js`，对应 `/uapi/weather`，前端无需改任何配置；只需在项目设置里配好 `UAPI_KEY`，并确认项目启用了 Functions。
+- **Cloudflare Pages / EdgeOne Pages**：函数源码放在 `functions/` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js`，对应 `/uapi/weather`，前端无需改任何配置；只需在平台控制台环境变量中配好 `UAPI_KEY` 即可。
 - **Cloudflare Worker**：可参照 `worker/amap-proxy.js` 的结构实现同协议的 `/weather` 接口（同样需要按访客 IP 反查城市），再配置 `VITE_UAPI_BASE`；跨域时记得同步放行 `index.html` 中的 CSP `connect-src`。
 
 > ⚠️ **各平台的配置互不通用**：Vercel 依赖 `api/` + `vercel.json`（路由重写），EdgeOne Pages 原生识别 `functions/` 目录（文件即路由，无需额外配置文件）。只带其中一份配置部署到另一个平台时，`/uapi/weather` 和 `/api/song` 都没有任何处理器，请求会落到静态资源：天气直接失败，播放器则退回内置备用接口。两份函数在仓库里都已内置，不要删掉自己用不到的那份。
@@ -215,7 +215,7 @@ uapis 的「不传城市时按 IP 自动定位」依据的是**请求来源 IP**
 
 | 方式 | 适合场景 | 配置方式 | 天气 Key |
 | --- | --- | --- | --- |
-| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` | Vercel（`api/`）与 EdgeOne（`functions/`）可直接由内置函数注入；Cloudflare 等纯静态平台需自备 Worker 代理 |
+| 托管平台（Vercel / Cloudflare Pages / EdgeOne） | 推荐，自动构建与 HTTPS | 平台控制台配置环境变量（首选）或提交 `.env` | Vercel（`api/`）、Cloudflare Pages 与 EdgeOne（`functions/`）均可直接由内置函数注入 |
 | 静态文件构建 | 自有服务器 / 任意静态托管 | 本地配置 `.env` 后构建，上传 `dist/` | 需自备代理 |
 | Docker | 自有服务器，容器化运行 | 本地配置 `.env` 后构建镜像 | 需在 nginx 中反代 |
 
@@ -244,17 +244,17 @@ Vercel 会自动把仓库根目录 `api/` 下的文件部署为 Serverless Funct
 2. 可选：添加 `ALLOWED_ORIGIN = https://你的域名`，防止函数被他人盗刷；
 3. 无需配置 `VITE_UAPI_BASE`（前端默认走 `/uapi`）。
 
-**天气 Key 在 EdgeOne Pages 上的配置：**
+**天气 Key 在 Cloudflare Pages / EdgeOne Pages 上的配置：**
 
-EdgeOne Pages 用的是 `/functions` 目录（文件即路由），仓库已内置 `functions/uapi/weather.js` → 路由 `/uapi/weather`，与前端默认配置一致。因此只需要：
+Cloudflare Pages 与 EdgeOne Pages 均原生支持 `/functions` 目录（Pages Functions，文件即路由），仓库已内置 `functions/uapi/weather.js` → 路由 `/uapi/weather`，与前端默认配置一致。因此只需要：
 
-1. 在 EdgeOne Pages 项目设置 → 环境变量中添加 `UAPI_KEY`（**不要加 `VITE_` 前缀**）；
+1. 在平台项目设置（Settings → Environment Variables）中添加 `UAPI_KEY`（**不要加 `VITE_` 前缀**）；
 2. 可选：添加 `ALLOWED_ORIGIN = https://你的域名`；
-3. 确认项目已启用 Functions（`functions/` 目录会被自动识别），推送后重新部署。
+3. 无需配置 `VITE_UAPI_BASE`（前端默认走 `/uapi`），推送或构建后重新部署即可。
 
-> Vercel 与 EdgeOne 的配置互不通用：Vercel 依赖 `api/` + `vercel.json`，EdgeOne Pages 原生依赖 `functions/` 目录。只带一份配置部署到另一个平台时，天气接口会是 404。Cloudflare Pages 两者都不支持，需自备 Worker 代理并把 `VITE_UAPI_BASE` 指向它。
-
-> 平台控制台的变量优先级高于 `.env` 文件；Node.js 版本无需手动设置（`engines` 字段已声明，Vercel 会自动选用 Node 22+）。
+> Vercel 依赖 `api/` + `vercel.json`，而 Cloudflare Pages 和 EdgeOne Pages 原生依赖 `functions/` 目录。仓库已同时内置两份边缘函数，两类平台均可开箱即用。
+>
+> 平台控制台的变量优先级高于 `.env` 文件；仓库根目录已配置 `.node-version`（22），Cloudflare Pages 与 Vercel 均会自动选用 Node 22+。
 
 ### 静态文件构建
 
@@ -297,9 +297,9 @@ api/
 └── weather.js      # 天气代理函数（Vercel Serverless Function，服务端注入 API Key）
 functions/
 ├── api/
-│   └── song.js     # 歌单代理函数（EdgeOne Pages 边缘函数，路由 /api/song）
+│   └── song.js     # 歌单代理函数（Cloudflare Pages / EdgeOne Pages 边缘函数，路由 /api/song）
 └── uapi/
-    └── weather.js  # 天气代理函数（EdgeOne Pages 边缘函数，路由 /uapi/weather）
+    └── weather.js  # 天气代理函数（Cloudflare Pages / EdgeOne Pages 边缘函数，路由 /uapi/weather）
 src/
 ├── api/            # 前端 API 接口
 ├── assets/         # 静态资源（链接配置 JSON）

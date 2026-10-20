@@ -1,5 +1,5 @@
 /**
- * uapis 天气代理（EdgeOne Pages 边缘函数）
+ * uapis 天气代理（Cloudflare Pages / EdgeOne Pages 边缘函数）
  *
  * 路由：functions/uapi/weather.js → /uapi/weather
  * 与 Vercel 版（api/weather.js）路径保持一致，因此前端无需任何改动，
@@ -55,6 +55,10 @@ const fetchUpstream = async (url, apiKey) => {
 
 /** 取访客真实 IP：优先用 EdgeOne 原生属性，请求头作为兜底 */
 const getClientIp = (request) => {
+  // Cloudflare Pages 原生客户端真实 IP 头
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp) return String(cfIp).trim();
+
   const native = request.eo && request.eo.clientIp;
   if (native) return String(native).trim();
 
@@ -136,7 +140,7 @@ export async function onRequest({ request, env }) {
     return new Response(
       JSON.stringify({
         error: "UAPI_KEY_NOT_CONFIGURED",
-        message: "未配置环境变量 UAPI_KEY，请在 EdgeOne Pages 项目设置中添加",
+        message: "未配置环境变量 UAPI_KEY，请在 Cloudflare Pages / EdgeOne Pages 项目设置中添加",
       }),
       { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } },
     );
